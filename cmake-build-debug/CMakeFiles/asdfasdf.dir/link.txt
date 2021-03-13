@@ -1,0 +1,3 @@
+"C:\Program Files\JetBrains\CLion 2019.2.1\bin\cmake\win\bin\cmake.exe" -E remove -f CMakeFiles\asdfasdf.dir/objects.a
+C:\MinGW\bin\ar.exe cr CMakeFiles\asdfasdf.dir/objects.a @CMakeFiles\asdfasdf.dir\objects1.rsp
+C:\MinGW\bin\g++.exe -g   -Wl,--whole-archive CMakeFiles\asdfasdf.dir/objects.a -Wl,--no-whole-archive  -o asdfasdf.exe -Wl,--out-implib,libasdfasdf.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\asdfasdf.dir\linklibs.rsp
