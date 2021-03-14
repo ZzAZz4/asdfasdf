@@ -1,13 +1,29 @@
 #include <iostream>
+#include <bitset>
 #include "include/scanner.hpp"
 
 int main ()
 {
-    std::string_view sv = "neun";
-    auto c = match(sv);
+    // this grammar is not faulty, so it passes. yay!
+    std::string s = "zweihundertzweiundzwanzigtausendvierhundertsiebzehn";
+    Lexer lexer(s);
+    auto lexemes = lexer.lex();
+    for (auto lexeme : lexemes)
+        std::cout << (int) lexeme.token << ' ' << lexeme.str << ' ' << lexeme.value << '\n';
 
-    if (!(c & Token::ERR_BIT))
-        std::cout << getVal(c);
-    else
-        std::cerr << "Error: expected " << getName(c & ~(Token::ERR_BIT));
+    // this grammar is faulty as hell
+//    std::string s = "puddingpuddingnepupudding";
+//    Lexer lexer(s);
+//    auto lexemes = lexer.lex();
+//
+//    std::cerr.flush();
+
+    // this one is the first one but has a typo
+//    std::string s = "zweihundertzwpiundzwanzigtausendvierhundertsiebzehn";
+//    Lexer lexer(s);
+//    auto lexemes = lexer.lex();
+//    for (auto lexeme : lexemes)
+//        std::cout << (int) lexeme.token << ' ' << lexeme.str << ' ' << lexeme.value << '\n';
+
+
 }
