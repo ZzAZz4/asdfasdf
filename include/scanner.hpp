@@ -5,6 +5,7 @@
 #include <array>
 #include <vector>
 #include <cassert>
+#include <iostream>
 
 namespace Grammar
 {
@@ -59,6 +60,10 @@ namespace Grammar
     {
         return TOKEN_VAL[token];
     }
+
+    using Type = std::underlying_type_t<Token>;
+    using Value = decltype(TOKEN_VAL)::value_type;
+    using View = std::string_view;
 }
 
 struct Lexer
@@ -66,33 +71,39 @@ struct Lexer
 public:
     struct Item
     {
-        unsigned error = 0;
-        int value = 0;
-        std::string_view str;
+        Grammar::Type error = 0;
         Grammar::Token token = Grammar::NONE;
 
         constexpr bool hasError ()
         { return error & (unsigned) Grammar::ERR_BIT; }
 
-        template<class ... Args>
-        static auto Error (std::string_view v, int unmatched, Args ... args)
+        constexpr Grammar::Value value () const
         {
-            auto err = (Grammar::ERR_BIT | ... | (1u << ((unsigned) args - 1)));
+            return Grammar::valueOf(token);
+        }
+
+        constexpr Grammar::View str () const
+        {
+            return Grammar::strOf(token);
+        }
+
+        template<class ... Args>
+        static auto Error (Args ... args)
+        {
+            using namespace Grammar;
+            Type err = (ERR_BIT | ... | (1u << ((Type) args - 1)));
 
             return Item{
                 .error = err,
-                .value = unmatched,
-                .str = v,
-                .token = Grammar::NONE
+                .token = NONE
             };
         }
 
         static auto Valid (Grammar::Token token)
         {
+            using namespace Grammar;
             return Item{
-                .error = (unsigned) Grammar::NONE,
-                .value = Grammar::valueOf(token),
-                .str = strOf(token),
+                .error = (Type) NONE,
                 .token = token
             };
         }
@@ -100,8 +111,8 @@ public:
 
     struct State
     {
-        std::string_view stream;
-        std::string_view parsed;
+        Grammar::View stream;
+        Grammar::View parsed;
         int& orig_pos;
 
         constexpr void advance (int dist)
@@ -115,16 +126,14 @@ public:
             parsed = stream.substr(0, parsed.size() - dist);
             orig_pos -= dist;
         }
-
     };
 
-    std::string_view stream;
-    std::string_view str_save;
+    Grammar::View stream;
     int position = 0;
 
 public:
     explicit Lexer (std::string_view s)
-        : stream(s), str_save(s), position(0)
+        : stream(s), position(0)
     {}
 
     static constexpr auto consume (State& state)
@@ -153,18 +162,15 @@ public:
     constexpr auto lexToken (std::string_view str)
     {
         using namespace Grammar;
+        constexpr auto Valid = Item::Valid;
+        const auto Err = [&] (auto... args) { return Item::Error(args...); };
+
+        if (str.empty()) return Valid(NONE);
 
         int init = position;
         State s{ str, "", position };
-        constexpr auto Valid = Item::Valid;
 
-        if (str.empty()) return Valid(NONE);
-        const auto Err = [&] (auto... args)
-        {
-            return Item::Error(s.parsed, position - init, args...);
-        };
-
-        auto itemIf = [&] (Token token, std::string_view p)
+        auto itemIf = [&] (Token token, View p)
         {
             if (expect(s, p)) return Valid(token);
             else return Err(token);
@@ -205,7 +211,7 @@ public:
                 return Valid(SIEB);
             }
             else if (c == 's') return itemIf(SSIG, "ig");
-            else return Err(1, SECH, SECHS, SIEB, SIEBEN, SSIG);
+            else return Err(SECH, SECHS, SIEB, SIEBEN, SSIG);
         }
         if (c == 't') return itemIf(TAUSEND, "ausend");
         if (c == 'u') return itemIf(UND, "nd");
@@ -228,21 +234,22 @@ public:
             return Err(ZEHN, ZIG, ZWAN, ZWEI, ZWOELF);
         }
         s.revert(1);
-        return Err(0, NONE);
+        return Err(NONE);
     }
 
+
     [[noreturn]]
-    void exitWithError (Item fault)
+    void exitWithError (Item fault, Grammar::View str)
     {
         constexpr int pSize = 10, tSize = 12;
         std::cerr << "On position " << position << " of input: \n";
-        std::cerr << "Unexpected character '" << str_save[position]
-                  << "' during lex attempt of: " << fault.str <<  "\n\n";
+        std::cerr << "Unexpected character '" << stream[position]
+                  << "' during lex attempt of: " << str << "\n\n";
 
         auto prefInit = std::max(position - pSize, 0);
         auto prefSz = std::min(position, pSize) + 3 * (position >= pSize);
-        auto prefix = str_save.substr(prefInit, prefSz);
-        auto trail = str_save.substr(position, tSize);
+        auto prefix = stream.substr(prefInit, prefSz);
+        auto trail = stream.substr(position, tSize);
         auto trailSz = trail.size();
         std::cerr << (position >= pSize ? "..." : "")
                   << prefix << trail
@@ -272,14 +279,17 @@ public:
         std::vector<Item> lexemes;
         while (true)
         {
+            auto pPos = position;
             item = lexToken(stream.substr(position));
-            if (!item.token) break;
+            auto diff = position - pPos;
+            if (!item.token)
+            {
+                if (!item.hasError()) return lexemes;
+                exitWithError(item, stream.substr(pPos, diff));
+            }
             lexemes.emplace_back(item);
+
         }
-        if (item.hasError())
-            exitWithError(item);
-        else
-            return lexemes;
     }
 };
 
