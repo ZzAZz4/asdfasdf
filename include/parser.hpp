@@ -9,19 +9,40 @@
 #include "common.hpp"
 
 #include <iostream>
+#include <tuple>
 
+// type and key
+template <typename T = Rule ,  typename  K = int>
+struct Node{
+    // ID -> pos of dot and rule
+    std::unordered_multimap<ID, std::pair<K, T>> rules;
 
-template <typename T = Rules>
-struct node{
-    // pos of dot and rule
-    std::vector<std::pair<unsigned ,T>> rules;
+    Node() = default;
 
-    node(T  val){
-        rules.push_back({0,val});
+    void insert(T  val, unsigned  pos = 0){
+        rules.insert({pos,val});
     }
 
-    node(T  val, unsigned  pos){
-        rules.push_back({pos,val});
+
+    bool contains(const ID& lhs,const T &rule, unsigned pos = 0){
+        auto its = rules.equal_range(lhs);
+        for (auto it = its.first; it != its.second; ++it) {
+            auto [pos1,  lhs] = it->second;
+            if(pos != pos1) continue;
+
+            auto elem1 = rule.begin();
+            auto  elem2 = lhs.begin();
+
+            while(elem1 != rule.end() || elem2 != lhs.end() ){
+                if(elem1++ != elem2++) continue;
+            }
+            if(elem1 == rule.end() && elem2 == lhs.end()) return true;
+        }
+        return false;
+    }
+
+    bool operator == (Node<T,K> &other){
+        return false;
     }
 
 };
@@ -31,17 +52,36 @@ struct node{
 template <typename T = ID, typename  K = int>
 class parserDfa{
 
-    const std::string separator = ".";
     const K finalState = 1;
     const K initialState = 0;
 
 
-    std::unordered_map< K,  node <T>> states;
-    std::unordered_map<K , std::unordered_map<T, node<Rules>* >> states_{};
+    std::unordered_map< K,  Node <T>*> states;
+    std::unordered_map<K , std::unordered_map<T, Node<Rule>* >> states_{};
+
+public:
+
+    auto getRules(const Rules& rules, const ID& nonTerminal){
+        return rules.equal_range(nonTerminal);
+    }
+
+    parserDfa(const Rules& rules, const ID start,const SetMap& first, const SetMap &follow, const ){
+
+        std::unordered_set<ID> visNonTerminal;
+        states_[initialState] = new Node;
 
 
-    parserDfa(const Rules& rules, const ID start,const SetMap& first, const SetMap &follow){
-        node curr{rules[start]};
+        auto range = rules.equal_range(start);
+        for (auto it = range.first; it != range.second; ++it) {
+            states_[initialState]->insert(it->second);
+
+        }
+
+
+
+
+
+
     }
 };
 
