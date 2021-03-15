@@ -88,7 +88,7 @@ public:
         }
 
         template<class ... Args>
-        static auto Error (Args ... args)
+        constexpr static auto Error (Args ... args)
         {
             using namespace Grammar;
             Type err = (ERR_BIT | ... | (1u << ((Type) args - 1)));
@@ -99,7 +99,7 @@ public:
             };
         }
 
-        static auto Valid (Grammar::Token token)
+        constexpr static auto Valid (Grammar::Token token)
         {
             using namespace Grammar;
             return Item{
@@ -163,7 +163,7 @@ public:
     {
         using namespace Grammar;
         constexpr auto Valid = Item::Valid;
-        const auto Err = [&] (auto... args) { return Item::Error(args...); };
+        constexpr auto Err = [] (auto... args) { return Item::Error(args...); };
 
         if (str.empty()) return Valid(NONE);
 
