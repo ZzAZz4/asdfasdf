@@ -2,121 +2,294 @@
 #define ASDFASDF_SCANNER_HPP
 
 #include <string_view>
+#include <array>
+#include <vector>
+#include <cassert>
+#include <iostream>
 
-
-enum Token : unsigned char
+namespace Grammar
 {
-    ACHT,
-    DREI,
-    EIN,
-    ELF,
-    FUENF,
-    HUNDERT,
-    NEUN,
-    SECH,
-    SECHS,
-    SIEB,
-    SIEBEN,
-    SSIG,
-    TAUSEND,
-    UND,
-    VIER,
-    ZEHN,
-    ZIG,
-    ZWAN,
-    ZWEI,
-    ZWOELF,
-    TOKEN_AUX,
-    NONE = 0xFF,
-    ERROR = 0x80
-};
+    using namespace std::string_view_literals;
 
-constexpr static int TOKEN_VAL[] =
-    { 8, 3, 1, 11, 5, 100, 9, 6, 6, 7, 7,
-      10, 1000, -1, 4, 10, 10, 2, 2, 12 };
+    constexpr static unsigned NUM_TOKENS = 20;
+    enum Token : unsigned
+    {
+        ACHT = 1,
+        DREI,
+        EIN,
+        ELF,
+        FUENF,
+        HUNDERT,
+        NEUN,
+        SECH,
+        SECHS,
+        SIEB,
+        SIEBEN,
+        SSIG,
+        TAUSEND,
+        UND,
+        VIER,
+        ZEHN,
+        ZIG,
+        ZWAN,
+        ZWEI,
+        ZWOELF,
+        ERR_BIT = (1u << 31u),
+        NONE = 0u,
+    };
 
-static constexpr auto match (std::string_view& s)
-{
-    constexpr auto consume = [] (std::string_view& s)
-    {
-        auto c = s.front();
-        s.remove_prefix(1);
-        return c;
+    constexpr static std::array TOKEN_VAL = {
+        0xfffffff, 8, 3, 1, 11, 5, 100, 9, 6, 6, 7, 7,
+        10, 1000, 0, 4, 10, 10, 2, 2, 12
     };
-    constexpr auto expect = [] (std::string_view& s, char c)
-    {
-        if (c != s.front())
-            return false;
-        s.remove_prefix(1);
-        return true;
-    };
-    constexpr auto str_expect = [] (std::string_view& s, std::string_view c)
-    {
-        if (s.substr(0, c.size()) != c)
-            return false;
-        s.remove_prefix(c.size());
-        return true;
-    };
-    if (s.empty()) return NONE;
 
-    auto c = consume(s);
-    if (c == 'a') return str_expect(s, "cht") ? ACHT : ERROR;
-    else if (c == 'd') return str_expect(s, "rei") ? DREI : ERROR;
-    else if (c == 'e')
+    constexpr static std::array TOKEN_STR = {
+        ""sv, "acht"sv, "drei"sv, "ein"sv, "elf"sv,
+        "fuenf"sv, "hundert"sv, "neun"sv, "sech"sv,
+        "sechs"sv, "sieb"sv, "sieben"sv, "ssig"sv,
+        "tausend"sv, "und"sv, "vier"sv, "zehn"sv,
+        "zig"sv, "zwan"sv, "zwei"sv, "zwoelf"sv,
+    };
+
+    constexpr static auto strOf (unsigned token) noexcept
     {
-        auto nc = consume(s);
-        if (nc == 'i') return expect(s, 'n') ? EIN : ERROR;
-        else return nc == 'l' && expect(s, 'f') ? ELF : ERROR;
+        return TOKEN_STR[token];
     }
-    else if (c == 'f') return str_expect(s, "uenf") ? FUENF : ERROR;
-    else if (c == 'h') return str_expect(s, "undert") ? HUNDERT : ERROR;
-    else if (c == 'n') return str_expect(s, "eun") ? NEUN : ERROR;
-    else if (c == 's')
+
+    constexpr static auto valueOf (unsigned token) noexcept
     {
-        auto nc = consume(s);
-        if (nc == 'e')
-        {
-            if (!str_expect(s, "ch")) return ERROR;
-            if (s.front() != 's') return SECH;
-            s.remove_prefix(1);
-            return SECHS;
-        }
-        else if (nc == 'i')
-        {
-            if (!str_expect(s, "eb")) return ERROR;
-            if (s.substr(0, 2) != "en") return SIEB;
-            s.remove_prefix(2);
-            return SIEBEN;
-        }
-        else return nc == 's' && str_expect(s, "ig") ? SSIG : ERROR;
+        return TOKEN_VAL[token];
     }
-    if (c == 't') return str_expect(s, "ausend") ? TAUSEND : ERROR;
-    if (c == 'u') return str_expect(s, "nd") ? UND : ERROR;
-    if (c == 'v') return str_expect(s, "ier") ? VIER : ERROR;
-    if (c == 'z')
-    {
-        c = consume(s);
-        if (c == 'e') return str_expect(s, "hn") ? ZEHN : ERROR;
-        if (c == 'i') return expect(s, 'g') ? ZIG : ERROR;
-        if (c != 'w') return ERROR;
-        c = consume(s);
-        if (c == 'a') return expect(s, 'n') ? ZWAN : ERROR;
-        if (c == 'e') return expect(s, 'i') ? ZWEI : ERROR;
-        return c == 'o' && str_expect(s, "elf") ? ZWOELF : ERROR;
-    }
-    return ERROR;
+
+    using Type = std::underlying_type_t<Token>;
+    using Value = decltype(TOKEN_VAL)::value_type;
+    using View = std::string_view;
 }
 
-
-template<typename StVal_>
-struct Scanner
+struct Lexer
 {
-    constexpr static int NUM_OF_TOKENS = (int) Token::TOKEN_AUX;
-    StVal_ value;
-
-    Token readToken ()
+public:
+    struct Item
     {
+        Grammar::Type error = 0;
+        Grammar::Token token = Grammar::NONE;
 
+        constexpr bool hasError ()
+        { return error & (unsigned) Grammar::ERR_BIT; }
+
+        constexpr Grammar::Value value () const
+        {
+            return Grammar::valueOf(token);
+        }
+
+        constexpr Grammar::View str () const
+        {
+            return Grammar::strOf(token);
+        }
+
+        template<class ... Args>
+        static auto Error (Args ... args)
+        {
+            using namespace Grammar;
+            Type err = (ERR_BIT | ... | (1u << ((Type) args - 1)));
+
+            return Item{
+                .error = err,
+                .token = NONE
+            };
+        }
+
+        static auto Valid (Grammar::Token token)
+        {
+            using namespace Grammar;
+            return Item{
+                .error = (Type) NONE,
+                .token = token
+            };
+        }
+    };
+
+    struct State
+    {
+        Grammar::View stream;
+        Grammar::View parsed;
+        int& orig_pos;
+
+        constexpr void advance (int dist)
+        {
+            parsed = stream.substr(0, parsed.size() + dist);
+            orig_pos += dist;
+        }
+
+        constexpr void revert (int dist)
+        {
+            parsed = stream.substr(0, parsed.size() - dist);
+            orig_pos -= dist;
+        }
+    };
+
+    Grammar::View stream;
+    int position = 0;
+
+public:
+    explicit Lexer (std::string_view s)
+        : stream(s), position(0)
+    {}
+
+    static constexpr auto consume (State& state)
+    {
+        auto pos = state.parsed.size();
+        auto c = state.stream.at(pos);
+        state.advance(1);
+        return c;
+    };
+
+    static constexpr auto expect (State& state, std::string_view exp)
+    {
+        auto pos = state.parsed.size();
+        auto prefix = state.stream.substr(pos, exp.size());
+        if (prefix != exp)
+        {
+            auto unmatched = std::mismatch(
+                exp.begin(), exp.end(), prefix.begin());
+            state.advance(std::distance(exp.begin(), unmatched.first));
+            return false;
+        }
+        state.advance(exp.size());
+        return true;
+    };
+
+    constexpr auto lexToken (std::string_view str)
+    {
+        using namespace Grammar;
+        constexpr auto Valid = Item::Valid;
+        const auto Err = [&] (auto... args) { return Item::Error(args...); };
+
+        if (str.empty()) return Valid(NONE);
+
+        int init = position;
+        State s{ str, "", position };
+
+        auto itemIf = [&] (Token token, View p)
+        {
+            if (expect(s, p)) return Valid(token);
+            else return Err(token);
+        };
+
+        auto c = consume(s);
+        if (c == 'a') return itemIf(ACHT, "cht");
+        else if (c == 'd') return itemIf(DREI, "rei");
+        else if (c == 'e')
+        {
+            c = consume(s);
+            if (c == 'i') return itemIf(EIN, "n");
+            if (c == 'l') return itemIf(ELF, "f");
+            s.revert(1);
+            return Err(EIN, ELF);
+        }
+        else if (c == 'f') return itemIf(FUENF, "uenf");
+        else if (c == 'h') return itemIf(HUNDERT, "undert");
+        else if (c == 'n') return itemIf(NEUN, "eun");
+        else if (c == 's')
+        {
+            c = consume(s);
+            if (c == 'e')
+            {
+                if (!expect(s, "ch")) return Err(SECH, SECHS);
+                auto follow_s = consume(s);
+                if (follow_s == 's') return Valid(SECHS);
+                s.revert(1);
+                return Valid(SECH);
+            }
+            else if (c == 'i')
+            {
+                if (!expect(s, "eb")) return Err(SIEB, SIEBEN);
+                auto follow_e = consume(s);
+                auto follow_n = consume(s);
+                if (follow_e == 'e' && follow_n == 'n') return Valid(SIEBEN);
+                s.revert(2);
+                return Valid(SIEB);
+            }
+            else if (c == 's') return itemIf(SSIG, "ig");
+            else return Err(SECH, SECHS, SIEB, SIEBEN, SSIG);
+        }
+        if (c == 't') return itemIf(TAUSEND, "ausend");
+        if (c == 'u') return itemIf(UND, "nd");
+        if (c == 'v') return itemIf(VIER, "ier");
+        if (c == 'z')
+        {
+            c = consume(s);
+            if (c == 'e') return itemIf(ZEHN, "hn");
+            if (c == 'i') return itemIf(ZIG, "g");
+            if (c == 'w')
+            {
+                c = consume(s);
+                if (c == 'a') return itemIf(ZWAN, "n");
+                if (c == 'e') return itemIf(ZWEI, "i");
+                if (c == 'o') return itemIf(ZWOELF, "elf");
+                s.revert(1);
+                return Err(ZWAN, ZWEI, ZWOELF);
+            }
+            s.revert(1);
+            return Err(ZEHN, ZIG, ZWAN, ZWEI, ZWOELF);
+        }
+        s.revert(1);
+        return Err(NONE);
+    }
+
+
+    [[noreturn]]
+    void exitWithError (Item fault, Grammar::View str)
+    {
+        constexpr int pSize = 10, tSize = 12;
+        std::cerr << "On position " << position << " of input: \n";
+        std::cerr << "Unexpected character '" << stream[position]
+                  << "' during lex attempt of: " << str << "\n\n";
+
+        auto prefInit = std::max(position - pSize, 0);
+        auto prefSz = std::min(position, pSize) + 3 * (position >= pSize);
+        auto prefix = stream.substr(prefInit, prefSz);
+        auto trail = stream.substr(position, tSize);
+        auto trailSz = trail.size();
+        std::cerr << (position >= pSize ? "..." : "")
+                  << prefix << trail
+                  << (trailSz >= tSize ? "..." : "")
+                  << "\n";
+
+        while (prefSz--)
+            std::cerr << '-';
+        std::cerr << "^\n\n";
+
+        bool found = false;
+        for (unsigned i = 0; i < Grammar::NUM_TOKENS; ++i)
+        {
+            if (fault.error & (1u << i))
+            {
+                found = true;
+                std::cerr << "Possible fix: " << Grammar::strOf(i + 1) << "\n";
+            }
+        }
+        if (!found) std::cerr << "No obvious fixes available\n";
+        std::exit(-1);
+    }
+
+    std::vector<Item> lex ()
+    {
+        Item item;
+        std::vector<Item> lexemes;
+        while (true)
+        {
+            auto pPos = position;
+            item = lexToken(stream.substr(position));
+            auto diff = position - pPos;
+            if (!item.token)
+            {
+                if (!item.hasError()) return lexemes;
+                exitWithError(item, stream.substr(pPos, diff));
+            }
+            lexemes.emplace_back(item);
+
+        }
     }
 };
 
