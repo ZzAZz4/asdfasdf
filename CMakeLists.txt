@@ -3,4 +3,8 @@ project(asdfasdf)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(asdfasdf main.cpp main.cpp include/parser.hpp include/scanner.hpp include/yoquesetreesignodepregunta.hpp src/parser.cpp src/scanner.cpp src/yoquesetreesignodepregunta.cpp)
+file(GLOB asdfasdf_SRC
+        "include/*.h"
+        "src/*.cpp")
+
+add_executable(asdfasdf main.cpp ${asdfasdf_SRC})
