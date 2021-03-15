@@ -32,7 +32,7 @@ SLRparser::SLRparser(const Rules &rules, ID start) {
 //    std::cout<<start<<'\n';
 
     // create dfa
-    parserDfa<ID,int> dfa (rules,start,first,follow);
+    parserDfa<ID,int> dfa (rules,start,first,follow,nonTerms);
 
 
     // create the table

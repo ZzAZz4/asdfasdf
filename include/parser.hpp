@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <tuple>
+#include <queue>
 
 // type and key
 template <typename T = Rule ,  typename  K = int>
@@ -45,6 +46,8 @@ struct Node{
         return false;
     }
 
+
+
 };
 
 
@@ -54,9 +57,10 @@ class parserDfa{
 
     const K finalState = 1;
     const K initialState = 0;
+    IDSet  nonTerms;
 
 
-    std::unordered_map< K,  Node <T>*> states;
+    std::unordered_map< K,  Node <Rule>*> states;
     std::unordered_map<K , std::unordered_map<T, Node<Rule>* >> states_{};
 
 public:
@@ -65,21 +69,35 @@ public:
         return rules.equal_range(nonTerminal);
     }
 
-    parserDfa(const Rules& rules, const ID start,const SetMap& first, const SetMap &follow, const ){
+    void completaState(K state){
+        std::queue<std::pair<K,Rule>> toUse;
+        auto node = states_[state];
 
+        for(auto it: node->rules){
+            auto [pos,rule] = it.second;
+            if(nonTerms.find(rule[pos]) != nonTerms.end()) toUse.push({0,rule});
+
+        }
+
+        while (!toUse.empty()){
+            auto curr = toUse.front();
+            if(!node->contains(curr.second) && nonTerms.find(curr.second[0]) != nonTerms.end() )
+                node->insert(curr.first, curr.second);
+            toUse.pop();
+        }
+
+
+    }
+
+    parserDfa(const Rules& rules, const ID start,const SetMap& first, const SetMap &follow, const IDSet nonTerms): nonTerms(nonTerms){
         std::unordered_set<ID> visNonTerminal;
-        states_[initialState] = new Node;
+        states_.emplace(0,new Node<Rule>);
 
 
         auto range = rules.equal_range(start);
         for (auto it = range.first; it != range.second; ++it) {
-            states_[initialState]->insert(it->second);
-
+            states_[initialState];
         }
-
-
-
-
 
 
     }
