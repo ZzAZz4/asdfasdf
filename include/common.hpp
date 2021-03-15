@@ -40,4 +40,5 @@ bool contains (const Container<T, U...>& c, const T& elem);
 
 
 
+
 #endif //ASDFASDF_COMMON_HPP
