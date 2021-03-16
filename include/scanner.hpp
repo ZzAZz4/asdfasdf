@@ -6,6 +6,8 @@
 #include <vector>
 #include <cassert>
 #include <iostream>
+#include <algorithm>
+#include <numeric>
 
 namespace Grammar
 {
@@ -66,8 +68,26 @@ namespace Grammar
     using View = std::string_view;
 }
 
+
+constexpr auto beginsWith (Grammar::View s, Grammar::View e)
+{
+    return s.substr(0, e.size()) == e;
+};
+
 struct Lexer
 {
+private:
+    template<class Compare>
+    constexpr auto matcher (std::string_view s, Compare func)
+    {
+        using namespace Grammar;
+        return [s = View(s), f = std::move(func)] (View a, View b)
+        {
+            auto diff_pos = std::mismatch(begin(s), end(s), begin(b)).first;
+            auto new_size = (std::size_t) std::distance(begin(s), diff_pos);
+            return s.substr(0, f(new_size, a.size()));
+        };
+    }
 public:
     struct Item
     {
@@ -109,25 +129,6 @@ public:
         }
     };
 
-    struct State
-    {
-        Grammar::View stream;
-        Grammar::View parsed;
-        int& orig_pos;
-
-        constexpr void advance (int dist)
-        {
-            parsed = stream.substr(0, parsed.size() + dist);
-            orig_pos += dist;
-        }
-
-        constexpr void revert (int dist)
-        {
-            parsed = stream.substr(0, parsed.size() - dist);
-            orig_pos -= dist;
-        }
-    };
-
     Grammar::View stream;
     int position = 0;
 
@@ -136,105 +137,51 @@ public:
         : stream(s), position(0)
     {}
 
-    static constexpr auto consume (State& state)
-    {
-        auto pos = state.parsed.size();
-        auto c = state.stream.at(pos);
-        state.advance(1);
-        return c;
-    };
-
-    static constexpr auto expect (State& state, std::string_view exp)
-    {
-        auto pos = state.parsed.size();
-        auto prefix = state.stream.substr(pos, exp.size());
-        if (prefix != exp)
-        {
-            auto unmatched = std::mismatch(
-                exp.begin(), exp.end(), prefix.begin());
-            state.advance(std::distance(exp.begin(), unmatched.first));
-            return false;
-        }
-        state.advance(exp.size());
-        return true;
-    };
-
-    constexpr auto lexToken (std::string_view str)
+    /*constexpr*/
+    auto lexToken (std::string_view s)
     {
         using namespace Grammar;
-        constexpr auto Valid = Item::Valid;
-        constexpr auto Err = [] (auto... args) { return Item::Error(args...); };
+        using namespace std;
 
-        if (str.empty()) return Valid(NONE);
+        if (s.empty()) return Item::Valid(NONE);
 
-        int init = position;
-        State s{ str, "", position };
+        auto greater_than_s = [s = View(s)] (const auto& a) { return a > s; };
+        auto gt_eq = greater_equal<>();
+        auto noMatch = s.substr(0, 0);
 
-        auto itemIf = [&] (Token token, View p)
+        auto rTokenBegin = rbegin(TOKEN_STR), rTokenEnd = rend(TOKEN_STR) - 1;
+        auto rev = lower_bound(rTokenBegin, rTokenEnd, s, gt_eq);
+
+        auto mtcFst = decltype(TOKEN_STR)::const_iterator((rev + 1).base());
+        auto mtcLast = find_if(mtcFst, cend(TOKEN_STR), greater_than_s);
+        if (rev == rTokenEnd || (*rev)[0] != s[0])
+            mtcFst++, mtcLast++;
+
+        auto bestFunc = matcher(s, [] (auto a, auto b) { return max(a, b); });
+        auto match = accumulate(mtcFst, mtcLast, noMatch, bestFunc);
+
+        auto fs = lower_bound(begin(TOKEN_STR) + 1, end(TOKEN_STR), match);
+        if (fs != end(TOKEN_STR) && *fs == match)
         {
-            if (expect(s, p)) return Valid(token);
-            else return Err(token);
-        };
-
-        auto c = consume(s);
-        if (c == 'a') return itemIf(ACHT, "cht");
-        else if (c == 'd') return itemIf(DREI, "rei");
-        else if (c == 'e')
-        {
-            c = consume(s);
-            if (c == 'i') return itemIf(EIN, "n");
-            if (c == 'l') return itemIf(ELF, "f");
-            s.revert(1);
-            return Err(EIN, ELF);
+            auto token = static_cast<Token>(distance(begin(TOKEN_STR), fs));
+            auto item = Item::Valid(static_cast<Token>(token));
+            position += item.str().size();
+            return item;
         }
-        else if (c == 'f') return itemIf(FUENF, "uenf");
-        else if (c == 'h') return itemIf(HUNDERT, "undert");
-        else if (c == 'n') return itemIf(NEUN, "eun");
-        else if (c == 's')
+
+        auto commonFunc = matcher(s, [] (auto a, auto b) { return min(a, b); });
+        auto common = accumulate(mtcFst, mtcLast, s, commonFunc);
+
+        auto fix = lower_bound(begin(TOKEN_STR) + 1, end(TOKEN_STR), common);
+        auto item = Item::Error(NONE);
+
+        for (; fix != end(TOKEN_STR) && beginsWith(*fix, common); ++fix)
         {
-            c = consume(s);
-            if (c == 'e')
-            {
-                if (!expect(s, "ch")) return Err(SECH, SECHS);
-                auto follow_s = consume(s);
-                if (follow_s == 's') return Valid(SECHS);
-                s.revert(1);
-                return Valid(SECH);
-            }
-            else if (c == 'i')
-            {
-                if (!expect(s, "eb")) return Err(SIEB, SIEBEN);
-                auto follow_e = consume(s);
-                auto follow_n = consume(s);
-                if (follow_e == 'e' && follow_n == 'n') return Valid(SIEBEN);
-                s.revert(2);
-                return Valid(SIEB);
-            }
-            else if (c == 's') return itemIf(SSIG, "ig");
-            else return Err(SECH, SECHS, SIEB, SIEBEN, SSIG);
+            auto bitToSet = (Type) distance(begin(TOKEN_STR), fix) - (Type) 1;
+            item.error |= ((Type) 1u) << bitToSet;
         }
-        if (c == 't') return itemIf(TAUSEND, "ausend");
-        if (c == 'u') return itemIf(UND, "nd");
-        if (c == 'v') return itemIf(VIER, "ier");
-        if (c == 'z')
-        {
-            c = consume(s);
-            if (c == 'e') return itemIf(ZEHN, "hn");
-            if (c == 'i') return itemIf(ZIG, "g");
-            if (c == 'w')
-            {
-                c = consume(s);
-                if (c == 'a') return itemIf(ZWAN, "n");
-                if (c == 'e') return itemIf(ZWEI, "i");
-                if (c == 'o') return itemIf(ZWOELF, "elf");
-                s.revert(1);
-                return Err(ZWAN, ZWEI, ZWOELF);
-            }
-            s.revert(1);
-            return Err(ZEHN, ZIG, ZWAN, ZWEI, ZWOELF);
-        }
-        s.revert(1);
-        return Err(NONE);
+        position += common.size();
+        return item;
     }
 
 
@@ -288,7 +235,6 @@ public:
                 exitWithError(item, stream.substr(pPos, diff));
             }
             lexemes.emplace_back(item);
-
         }
     }
 };
