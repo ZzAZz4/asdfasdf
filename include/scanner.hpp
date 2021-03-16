@@ -8,6 +8,7 @@
 #include <iostream>
 #include <algorithm>
 #include <numeric>
+#include <sstream>
 
 namespace Grammar
 {
@@ -88,6 +89,7 @@ private:
             return s.substr(0, f(new_size, a.size()));
         };
     }
+
 public:
     struct Item
     {
@@ -149,19 +151,22 @@ public:
         auto gt_eq = greater_equal<>();
         auto noMatch = s.substr(0, 0);
 
-        auto rTokenBegin = rbegin(TOKEN_STR), rTokenEnd = rend(TOKEN_STR) - 1;
-        auto rev = lower_bound(rTokenBegin, rTokenEnd, s, gt_eq);
+        auto rtBegin = rbegin(TOKEN_STR), rtEnd = rend(TOKEN_STR) - 1;
+        auto tBegin = begin(TOKEN_STR) + 1, tEnd = end(TOKEN_STR);
 
-        auto mtcFst = decltype(TOKEN_STR)::const_iterator((rev + 1).base());
-        auto mtcLast = find_if(mtcFst, cend(TOKEN_STR), greater_than_s);
-        if (rev == rTokenEnd || (*rev)[0] != s[0])
-            mtcFst++, mtcLast++;
+        auto rev = lower_bound(rtBegin, rtEnd, s, gt_eq);
+        auto matchFst = decltype(TOKEN_STR)::const_iterator((rev + 1).base());
+
+        auto matchLst = find_if(matchFst, tEnd, greater_than_s);
+
+        if (rev == rtEnd || (*rev)[0] != s[0])
+            matchFst++, matchLst++;
 
         auto bestFunc = matcher(s, [] (auto a, auto b) { return max(a, b); });
-        auto match = accumulate(mtcFst, mtcLast, noMatch, bestFunc);
+        auto match = accumulate(matchFst, matchLst, noMatch, bestFunc);
 
-        auto fs = lower_bound(begin(TOKEN_STR) + 1, end(TOKEN_STR), match);
-        if (fs != end(TOKEN_STR) && *fs == match)
+        auto fs = lower_bound(tBegin, tEnd, match);
+        if (fs != tEnd && *fs == match)
         {
             auto token = static_cast<Token>(distance(begin(TOKEN_STR), fs));
             auto item = Item::Valid(static_cast<Token>(token));
@@ -170,42 +175,53 @@ public:
         }
 
         auto commonFunc = matcher(s, [] (auto a, auto b) { return min(a, b); });
-        auto common = accumulate(mtcFst, mtcLast, s, commonFunc);
+        auto common = accumulate(matchFst, matchLst, s, commonFunc);
 
-        auto fix = lower_bound(begin(TOKEN_STR) + 1, end(TOKEN_STR), common);
         auto item = Item::Error(NONE);
+        if (common.empty()) return item;
 
+        auto fix = lower_bound(tBegin, tEnd, common);
         for (; fix != end(TOKEN_STR) && beginsWith(*fix, common); ++fix)
         {
-            auto bitToSet = (Type) distance(begin(TOKEN_STR), fix) - (Type) 1;
+            auto bitToSet = (Type) distance(tBegin, fix);
             item.error |= ((Type) 1u) << bitToSet;
         }
         position += common.size();
         return item;
     }
 
+    struct LexerError : std::exception
+    {
+        std::string msg;
+        LexerError (std::string_view s) : msg(s) {}
+        const char* what () const throw()
+        {
+            return msg.c_str();
+        }
+    };
 
     [[noreturn]]
     void exitWithError (Item fault, Grammar::View str)
     {
-        constexpr int pSize = 10, tSize = 12;
-        std::cerr << "On position " << position << " of input: \n";
-        std::cerr << "Unexpected character '" << stream[position]
+        constexpr int prefixSize = 10, trailSize = 12;
+        std::stringstream errStream;
+
+        errStream << "On position " << position << " of input: \n";
+        errStream << "Unexpected character '" << stream[position]
                   << "' during lex attempt of: " << str << "\n\n";
 
-        auto prefInit = std::max(position - pSize, 0);
-        auto prefSz = std::min(position, pSize) + 3 * (position >= pSize);
-        auto prefix = stream.substr(prefInit, prefSz);
-        auto trail = stream.substr(position, tSize);
-        auto trailSz = trail.size();
-        std::cerr << (position >= pSize ? "..." : "")
+        auto hasThreeDots = position >= prefixSize;
+        auto prefixBegin = std::max(0, position - prefixSize);
+        auto prefix = stream.substr(prefixBegin, position - prefixBegin);
+        auto trail = stream.substr(position, trailSize);
+        errStream << (position >= prefixSize ? "..." : "")
                   << prefix << trail
-                  << (trailSz >= tSize ? "..." : "")
+                  << (trail.size() < trailSize ? "" : "...")
                   << "\n";
 
-        while (prefSz--)
-            std::cerr << '-';
-        std::cerr << "^\n\n";
+        for (int i = 0; i < prefix.size() + 3 * hasThreeDots; ++i)
+            errStream << '-';
+        errStream << "^\n\n";
 
         bool found = false;
         for (unsigned i = 0; i < Grammar::NUM_TOKENS; ++i)
@@ -213,11 +229,11 @@ public:
             if (fault.error & (1u << i))
             {
                 found = true;
-                std::cerr << "Possible fix: " << Grammar::strOf(i + 1) << "\n";
+                errStream << "Possible fix: " << Grammar::strOf(i + 1) << "\n";
             }
         }
-        if (!found) std::cerr << "No obvious fixes available\n";
-        std::exit(-1);
+        if (!found) errStream << "No obvious fixes available\n";
+        throw LexerError(errStream.str());
     }
 
     std::vector<Item> lex ()
