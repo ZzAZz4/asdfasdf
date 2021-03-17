@@ -7,23 +7,27 @@
 
 
 #include "common.hpp"
+#include "../include/followSet.hpp"
+#include "../include/firstSet.hpp"
+
 
 #include <iostream>
 #include <tuple>
 #include <queue>
+#include <utility>
 
 // type and key
 struct Node{
     using T = Rule;
     using K = int;
-    // ID -> pos of dot and rule
 
+    // ID -> pos of dot and rule
     std::unordered_multimap<ID, std::pair<K, T>> rules;
 
     Node() = default;
 
-    void insert(T  val, unsigned  pos = 0){
-
+    void insert(ID lhs,const T&  rule,unsigned  pos = 0){
+        rules.insert({lhs, {pos, rule}});
     }
 
 
@@ -59,42 +63,70 @@ class parserDfa{
 
     const K finalState = 1;
     const K initialState = 0;
+    const Rules & rules;
+
     IDSet  nonTerms;
 
 
     // saving nodes with
     std::unordered_map< K,  Node*> states;
     // saving transition of nodes
-    std::unordered_map<K , std::unordered_map<T, Node* >> states_{};
+    std::unordered_map<K , std::unordered_map<T, K>> transition;
 
 public:
 
-    auto getRules(const Rules& rules, const ID& nonTerminal){
-        return rules.equal_range(nonTerminal);
-    }
 
     void completeState(K state){
-        std::queue<std::pair<K,Rule>> toUse;
-        auto node = states_[state];
+        std::queue<ID>toUse;
+        auto node = states[state];
 
-//        for(auto it: node->rules){
-//            auto [pos,rule] = it.second;
-//            if(nonTerms.find(rule[pos]) != nonTerms.end()) toUse.push({0,rule});
-//
-//        }
-//
-//        while (!toUse.empty()){
-//            auto curr = toUse.front();
-//            if(!node->contains(curr.second) && nonTerms.find(curr.second[0]) != nonTerms.end() )
-//                node->insert(curr.first, curr.second);
-//            toUse.pop();
-//        }
+        //        std::unordered_multimap<ID, std::pair<K, T>> rules;
+        for(const auto& it: node->rules){
+            auto [pos,rule] = it.second;
+            if(nonTerms.find(rule[pos]) != nonTerms.end()) toUse.push({rule[pos]});
 
+        }
+
+        while (!toUse.empty()){
+            int pos = 0;
+            auto range = rules.equal_range(toUse.front());
+            for (auto it = range.first; it != range.second;it++ ) {
+                if(!node->contains(it->first,it->second) && nonTerms.find(it->second[pos]) != nonTerms.end()){
+                    node->insert(it->first, it->second,pos);
+                    if(node->rules.find(it->second[0]) == node->rules.end()){
+                        toUse.push(it->second[0]);
+                    }
+                }
+            }
+            toUse.pop();
+        }
 
     }
 
-    parserDfa(const Rules& rules, const ID start,const SetMap& first, const SetMap &follow, const IDSet nonTerms): nonTerms(nonTerms){
+    K makeTransition(){
+        
+    }
+
+    parserDfa(const Rules& rules, const ID&  start, IDSet  nonTerms): rules(rules),
+    nonTerms(std::move(nonTerms)){
         std::unordered_set<ID> visNonTerminal;
+
+        auto node = states[initialState] = new Node;
+
+
+//        std::cout<<"range:"<<'\n';
+        auto range = rules.equal_range(start);
+        for (auto it = range.first; it != range.second;it++ ) {
+//            std::cout<<it->first<<'\n';
+            for(auto rule: it->second){
+                node->insert(it->first, it->second);
+//                std::cout<<rule<<" ";
+            }
+//            std::cout<<std::endl;
+        }
+        completeState(initialState);
+
+
 
 
 
@@ -103,6 +135,17 @@ public:
 
     }
 };
+
+void print(const SetMap& m){
+    for(const auto & it: m){
+        std::cout<<it.first<<" :";
+        for(auto const & it2: it.second){
+            std::cout<<" "<<it2;
+        }
+        std::cout<<std::endl;
+    }
+}
+
 
 class SLRparser{
 private:
@@ -115,9 +158,30 @@ private:
 
 public:
 
-    explicit SLRparser (const Rules& rules, ID start);
+    explicit SLRparser (const Rules& rules, ID start){
+        // cretate first and follow
+        for (auto[lhs, _] : rules)
+            nonTerms.emplace(lhs);
 
-    bool parse (std::vector<ID> s);
+        first = makeFirst(rules, nonTerms);
+        follow = makeFollow(rules, start, first, nonTerms);
+        print(first);
+        std::cout<<'\n';
+        print(follow);
+
+
+            std::cout<<start<<'\n';
+
+        // create dfa
+        parserDfa dfa (rules,start,nonTerms);
+
+
+        // create the table
+    }
+
+    bool parse (std::vector<ID> s){
+        return false;
+    }
 
 };
 

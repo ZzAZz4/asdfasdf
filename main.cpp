@@ -1,15 +1,36 @@
 #include <iostream>
 #include <bitset>
 #include "include/scanner.hpp"
+#include "include/parser.hpp"
+
+
+void addRule (Rules& rules, ID lhs, Rule rhs)
+{
+    rules.emplace(lhs, std::move(rhs));
+}
+
 
 int main ()
 {
+    Rules rules;
+
+    ID start = "E'";
+
+    addRule(rules, {"E'"} , {"E"});
+
+    addRule(rules, {"E"} , {"E", "+", "n"});
+
+    addRule(rules, {"E"} , {"n"});
+
+    SLRparser p(rules,start);
+
+
 //     this grammar is not faulty, so it passes. yay!
-    std::string s = "zweihundertzweiundzwanzigtausendvierhundertsiebzehn";
-    Lexer lexer(s);
-    auto lexemes = lexer.lex();
-    for (auto lexeme : lexemes)
-        std::cout << (int) lexeme.token << ' ' << lexeme.str() << ' ' << lexeme.value() << '\n';
+//    std::string s = "zweihundertzweiundzwanzigtausendvierhundertsiebzehn";
+//    Lexer lexer(s);
+//    auto lexemes = lexer.lex();
+//    for (auto lexeme : lexemes)
+//        std::cout << (int) lexeme.token << ' ' << lexeme.str() << ' ' << lexeme.value() << '\n';
 
 //    // this grammar is faulty as hell
 //    std::string s = "puddingpuddingnepupudding";
