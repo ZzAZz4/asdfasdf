@@ -69,7 +69,6 @@ namespace Grammar
     using View = std::string_view;
 }
 
-
 constexpr auto beginsWith (Grammar::View s, Grammar::View e)
 {
     return s.substr(0, e.size()) == e;

@@ -1,31 +1,13 @@
 #include <iostream>
-#include <bitset>
-#include "include/scanner.hpp"
-#include <numeric>
+#include "include/parser.hpp"
 
 int main ()
 {
-    //     this grammar is not faulty, so it passes. yay!
-
-//    std::string s = "zweihundertzweiundzwanzigtausendvierhundertsiebzehn";
-//    Lexer lexer(s);
-//    auto lexemes = lexer.lex();
-//    for (auto lexeme : lexemes)
-//        std::cout << (int) lexeme.token << ' ' << lexeme.str() << ' ' << lexeme.value() << '\n';
-
-    // this grammar is faulty as hell
-//    std::string s = "puddingpuddingnepupudding";
-//    Lexer lexer(s);
-//    auto lexemes = lexer.lex();
-//
-//    std::cerr.flush();
-
-//     this one is the first one but has a typo
-    std::string s = "zweihundertzweiundzwpnzigtausendvierhundertsiebzehn";
-    Lexer lexer(s);
-    auto lexemes = lexer.lex();
-    for (auto lexeme : lexemes)
-        std::cout << (int) lexeme.token << ' ' << lexeme.str() << ' ' << lexeme.value() << '\n';
-
-
+    using namespace Grammar;
+//    int a[5] = {1, 2, 3, 4, 5};
+//    int b[5] = {1, 1, 1, 1, 1};
+//    int i;
+//    a[a[i]] = b[i=2];
+//    for (auto ii : a)
+//        std::cout << ii << ' ';
 }
