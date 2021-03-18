@@ -3,4 +3,4 @@ project(asdfasdf)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(asdfasdf main.cpp main.cpp include/parser.hpp include/scanner.hpp  src/scanner.cpp src/fisrtSet.cpp src/followSet.cpp include/firstSet.hpp include/followSet.hpp)
+add_executable(asdfasdf main.cpp include/common.hpp include/firstSet.hpp include/followSet.hpp include/parser.hpp include/scanner.hpp src/common.cpp src/fisrtSet.cpp src/followSet.cpp  src/scanner.cpp)

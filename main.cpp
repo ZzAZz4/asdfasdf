@@ -10,6 +10,7 @@ void addRule (Rules& rules, ID lhs, Rule rhs)
 }
 
 
+
 int main ()
 {
     Rules rules;
@@ -21,6 +22,9 @@ int main ()
     addRule(rules, {"E"} , {"E", "+", "n"});
 
     addRule(rules, {"E"} , {"n"});
+
+
+
 
     SLRparser p(rules,start);
 

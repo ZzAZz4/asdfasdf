@@ -36,6 +36,7 @@ struct Node{
         for (auto it = its.first; it != its.second; ++it) {
             auto [pos1,  lhs] = it->second;
             if(pos != pos1) continue;
+            if(rule.size() != it->second.second.size()) continue;
 
             auto elem1 = rule.begin();
             auto  elem2 = lhs.begin();
@@ -69,16 +70,15 @@ class parserDfa{
 
 
     // saving nodes with
-    std::unordered_map< K,  Node*> states;
+    std::vector<Node*> states;
     // saving transition of nodes
-    std::unordered_map<K , std::unordered_map<T, K>> transition;
+    std::vector<std::unordered_map<T, K>> transition;
 
 public:
 
 
-    void completeState(K state){
+    void completeState(Node* node){
         std::queue<ID>toUse;
-        auto node = states[state];
 
         //        std::unordered_multimap<ID, std::pair<K, T>> rules;
         for(const auto& it: node->rules){
@@ -91,9 +91,11 @@ public:
             int pos = 0;
             auto range = rules.equal_range(toUse.front());
             for (auto it = range.first; it != range.second;it++ ) {
-                if(!node->contains(it->first,it->second) && nonTerms.find(it->second[pos]) != nonTerms.end()){
+                auto temp1 = it->first;
+                auto temp2 = it->second;
+                if(!node->contains(it->first,it->second)){
                     node->insert(it->first, it->second,pos);
-                    if(node->rules.find(it->second[0]) == node->rules.end()){
+                    if(nonTerms.find(it->second[0]) != nonTerms.end() && node->rules.find(it->second[0]) == node->rules.end()){
                         toUse.push(it->second[0]);
                     }
                 }
@@ -103,14 +105,54 @@ public:
 
     }
 
-    K makeTransition(){
-        
+    void makeTransition(std::queue<K> & toUse, K state){
+        std::unordered_map<ID, Node*> toComplete;
+
+        // makin all posible transitions
+        for(const auto& r: states[state]->rules){
+            const auto& [lhs, rhs] = r;
+            auto [pos,rule] = rhs;
+            // the if below does'nt work
+            if(transition[state].find(rule[pos]) == transition[state].end() &&
+            toComplete.find(rule[pos]) == toComplete.end()){
+                auto node = new Node;
+                node->insert(lhs , rule, pos + 1);
+                toComplete.insert({rule[pos],node});
+            }
+            else{
+                states[state]->insert(lhs , rule, pos + 1);
+            }
+        }
+
+        // completing anf checking for repetitions
+        for(auto it: toComplete){
+            bool flag = true;
+            auto node = it.second;
+            completeState(node);
+            // oh god, oh fuck. why i must do this.
+            // god are you there?
+            int counter = 0;
+            for(auto ip: states){
+                if(it.second->rules == ip->rules){
+                    transition[state][it.first] = counter;
+                    flag = false;
+                    break;
+                }
+                counter++;
+            }
+            if(flag){
+                states.push_back(node);
+                transition[state][it.first] = states.size() - 1;
+                toUse.push(states.size() - 1);
+            }
+        }
+
     }
 
     parserDfa(const Rules& rules, const ID&  start, IDSet  nonTerms): rules(rules),
-    nonTerms(std::move(nonTerms)){
-        std::unordered_set<ID> visNonTerminal;
+    nonTerms(std::move(nonTerms)), states(1, nullptr){
 
+        std::queue<K> toUse;
         auto node = states[initialState] = new Node;
 
 
@@ -124,14 +166,13 @@ public:
             }
 //            std::cout<<std::endl;
         }
-        completeState(initialState);
-
-
-
-
-
-
-
+        completeState(node);
+        makeTransition(toUse,initialState);
+//
+//        while (!toUse.empty()){
+//            makeTransition(toUse,toUse.front());
+//            toUse.pop();
+//        }
 
     }
 };

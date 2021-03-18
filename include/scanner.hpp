@@ -38,6 +38,7 @@ namespace Grammar
         NONE = 0u,
     };
 
+
     constexpr static std::array TOKEN_VAL = {
         0xfffffff, 8, 3, 1, 11, 5, 100, 9, 6, 6, 7, 7,
         10, 1000, 0, 4, 10, 10, 2, 2, 12
@@ -60,6 +61,9 @@ namespace Grammar
     {
         return TOKEN_VAL[token];
     }
+
+
+
 
     using Type = std::underlying_type_t<Token>;
     using Value = decltype(TOKEN_VAL)::value_type;
