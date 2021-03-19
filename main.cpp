@@ -19,9 +19,18 @@ int main ()
 
     addRule(rules, {"E'"} , {"E"});
 
-    addRule(rules, {"E"} , {"E", "+", "n"});
+    addRule(rules, {"E"} , {"E", "+", "T"});
 
-    addRule(rules, {"E"} , {"n"});
+    addRule(rules, {"E"} , {"T"});
+
+    addRule(rules, {"T"} , {"T", "*", "F"});
+
+    addRule(rules, {"T"} , {"F"});
+
+    addRule(rules, {"F"} , {"(", "E", ")"});
+
+    addRule(rules, {"F"} , {"id"});
+
 
 
 

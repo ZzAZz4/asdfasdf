@@ -15,6 +15,7 @@
 #include <tuple>
 #include <queue>
 #include <utility>
+#include <iomanip>
 
 // type and key
 struct Node{
@@ -49,10 +50,6 @@ struct Node{
         return false;
     }
 
-
-
-
-
 };
 
 
@@ -67,6 +64,7 @@ class parserDfa{
     const Rules & rules;
 
     IDSet  nonTerms;
+    const ID  start;
 
 
     // saving nodes with
@@ -74,16 +72,30 @@ class parserDfa{
     // saving transition of nodes
     std::vector<std::unordered_map<T, K>> transition;
 
+
+    void insertState(Node* node){
+        states.emplace_back(node);
+    }
+
+    void insertTransition(K state, T tran, K val){
+        while(transition.size() <= state)
+            transition.emplace_back();
+        transition[state][tran] = val;
+    }
+
+    static bool isCompleteElement(const std::pair<int, Rule>& rhs){
+        return rhs.second.size() == rhs.first;
+    }
+
 public:
 
 
     void completeState(Node* node){
         std::queue<ID>toUse;
-
         //        std::unordered_multimap<ID, std::pair<K, T>> rules;
         for(const auto& it: node->rules){
             auto [pos,rule] = it.second;
-            if(nonTerms.find(rule[pos]) != nonTerms.end()) toUse.push({rule[pos]});
+            if(pos < rule.size() && nonTerms.find(rule[pos]) != nonTerms.end()) toUse.push({rule[pos]});
 
         }
 
@@ -95,7 +107,7 @@ public:
                 auto temp2 = it->second;
                 if(!node->contains(it->first,it->second)){
                     node->insert(it->first, it->second,pos);
-                    if(nonTerms.find(it->second[0]) != nonTerms.end() && node->rules.find(it->second[0]) == node->rules.end()){
+                    if(nonTerms.find(it->second[0]) != nonTerms.end()){
                         toUse.push(it->second[0]);
                     }
                 }
@@ -108,21 +120,23 @@ public:
     void makeTransition(std::queue<K> & toUse, K state){
         std::unordered_map<ID, Node*> toComplete;
 
+
         // makin all posible transitions
         for(const auto& r: states[state]->rules){
             const auto& [lhs, rhs] = r;
             auto [pos,rule] = rhs;
-            // the if below does'nt work
-            if(transition[state].find(rule[pos]) == transition[state].end() &&
-            toComplete.find(rule[pos]) == toComplete.end()){
+            if(rule[0] == epsilon || pos >= rule.size()) continue;
+
+            if(toComplete.find(rule[pos]) == toComplete.end()){
                 auto node = new Node;
                 node->insert(lhs , rule, pos + 1);
                 toComplete.insert({rule[pos],node});
             }
             else{
-                states[state]->insert(lhs , rule, pos + 1);
+                toComplete[rule[pos]]->insert(lhs , rule, pos + 1);
             }
         }
+
 
         // completing anf checking for repetitions
         for(auto it: toComplete){
@@ -134,27 +148,26 @@ public:
             int counter = 0;
             for(auto ip: states){
                 if(it.second->rules == ip->rules){
-                    transition[state][it.first] = counter;
+                    insertTransition(state,it.first,counter);
                     flag = false;
                     break;
                 }
                 counter++;
             }
             if(flag){
-                states.push_back(node);
-                transition[state][it.first] = states.size() - 1;
+                insertState(node);
+                insertTransition(state,it.first,states.size() - 1);
                 toUse.push(states.size() - 1);
             }
         }
 
     }
 
-    parserDfa(const Rules& rules, const ID&  start, IDSet  nonTerms): rules(rules),
-    nonTerms(std::move(nonTerms)), states(1, nullptr){
-
+    parserDfa(const Rules& rules, const ID  start, IDSet  nonTerms): rules(rules),
+    nonTerms(std::move(nonTerms)), start(start){
         std::queue<K> toUse;
-        auto node = states[initialState] = new Node;
-
+        auto node =new Node;
+        insertState(node);
 
 //        std::cout<<"range:"<<'\n';
         auto range = rules.equal_range(start);
@@ -168,13 +181,46 @@ public:
         }
         completeState(node);
         makeTransition(toUse,initialState);
-//
-//        while (!toUse.empty()){
-//            makeTransition(toUse,toUse.front());
-//            toUse.pop();
-//        }
+
+        while (!toUse.empty()){
+            makeTransition(toUse,toUse.front());
+            toUse.pop();
+        }
 
     }
+
+    void printDfa(){
+        std::cout<<'\n';
+//        std::cout<<states.size();
+//        return ;
+        for(int i = 0; i < states.size(); i++){
+            std::cout<<"State: "<<i<<'\n';
+            auto node = states[i];
+            for(const auto& it: node->rules){
+                std::cout<<it.first<<" -> ";
+                auto [pos,rule] = it.second;
+                for(int j = 0; j < rule.size(); j++){
+                    if(pos == j) std::cout<<" . ";
+                    std::cout<<rule[j]<<" ";
+                }
+                if(pos == rule.size()) std::cout<<" . ";
+                std::cout<<"\n";
+            }
+        }
+    }
+
+    void printTransitions(){
+        std::cout<<'\n' <<"States Transition: "<<'\n';
+
+        for(int i = 0; i < transition.size(); i++){
+            std::cout<<"State "<<i<<":\n";
+            if(transition[i].empty()) std::cout<<"No Transitions \n";
+            for(auto it: transition[i]){
+                std::cout<<"     "<<it.first<<" -> "<<it.second<<'\n';
+            }
+        }
+    }
+
 };
 
 void print(const SetMap& m){
@@ -215,6 +261,8 @@ public:
 
         // create dfa
         parserDfa dfa (rules,start,nonTerms);
+        dfa.printDfa();
+        dfa.printTransitions();
 
 
         // create the table
