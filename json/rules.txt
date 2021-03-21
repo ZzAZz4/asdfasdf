@@ -1,0 +1,73 @@
+S' -> S
+S -> z1
+S -> z2
+S -> z7
+S -> z8
+S -> z9
+S -> z10
+S -> z11
+S -> z12
+S -> z13
+S -> z14
+z2 -> z3 zehn
+z7 -> z4 zig
+z7 -> drei ssig
+z8 -> u z7
+z9 -> z1 z5
+z10 -> z2 z5
+z11 -> z5 z1
+z11 -> z5 z2
+z11 -> z5 z7
+z11 -> z5 z8
+z11 -> z9 z1
+z11 -> z9 z2
+z11 -> z9 z7
+z11 -> z9 z8
+z12 -> z10 z1
+z12 -> z10 z2
+z12 -> z10 z7
+z12 -> z10 z8
+z13 -> z1 z6
+z13 -> z2 z6
+z13 -> z7 z6
+z13 -> z8 z6
+z13 -> z9 z6
+z13 -> z11 z6
+z14 -> z613 z1278911
+u -> z1 und
+z613 -> z6
+z613 -> z13
+z1278911 -> z1
+z1278911 -> z2
+z1278911 -> z7
+z1278911 -> z8
+z1278911 -> z9
+z1278911 -> z11
+z1 -> ein
+z1 -> zwei
+z1 -> drei
+z1 -> vier
+z1 -> fuenf
+z1 -> sechs
+z1 -> sieben
+z1 -> acht
+z1 -> neun
+z2 -> zehn
+z2 -> elf
+z2 -> zwoelf
+z3 -> drei
+z3 -> vier
+z3 -> fuenf
+z3 -> sech
+z3 -> sieb
+z3 -> acht
+z3 -> neun
+z4 -> zwan
+z4 -> vier
+z4 -> fuenf
+z4 -> sech
+z4 -> sieb
+z4 -> acht
+z4 -> neun
+z5 -> hundert
+z6 -> tausend
