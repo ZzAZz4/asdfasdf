@@ -15,8 +15,8 @@ using json = nlohmann::json;
 namespace jsonTable{
 
     // insert yout full path
-    const string  file = "C:/Users/Jean Paul/CLionProjects/compPy/json/table.json";
-    const string ruleFile = "C:/Users/Jean Paul/CLionProjects/compPy/json/rules.txt";
+    const string  file = "C:/Users/esteb/Desktop/asdfasdf/json/table.json";
+    const string ruleFile = "C:/Users/esteb/Desktop/asdfasdf/json/rules.txt";
 
     json getJson(){
         json j;
@@ -31,9 +31,7 @@ namespace jsonTable{
 
 
 
-class slrTable{
-    private:
-
+struct slrTable{
     using grammarType = Grammar::Type ;
 
     using actionType = unsigned;
@@ -66,12 +64,14 @@ class slrTable{
             row.at("state").get<string>();
             unsigned state = stoi(row.at("state").get<string>());
 
-            for(int i = 0; i < Grammar::NUM_ALL_TOKENS; i++){
+            for(int i = 0; i <= Grammar::NUM_ALL_TOKENS; i++){
 
-                string val = row.at(string(Grammar::TOKEN_STR[i])).get<string>();
+                string val = row.at(string(Grammar::strOf(i))).get<string>();
                 // why the fuck does -62 char mean
                 // also checking it because fuck me
                 if(val[0] == -62 || val == " ") val = "";
+
+//                std::cout << Grammar::strOf(i) << ' ' << val << '\n';
 
                 if(val[0] == 's') {
                     action[state][i].first = "s";
@@ -82,15 +82,10 @@ class slrTable{
                     action[state][i].first = "r";
                     val = val.substr(1);
                     action[state][i].second = stoi(val);
-
                 }
-                else if(val == "$"){
-                    cout<<state;
-                    action[state][i].first = "$";
-                    action[state][i].second = Grammar::$end;
+                else if (val == "acc") {
+                    action[state][i].first = "acc";
                 }
-
-                if(i == 1) cout<<Grammar::TOKEN_STR[i]<<"|"<<val<<'\n';
 
             }
 
@@ -107,7 +102,7 @@ class slrTable{
                 // or is god fucking with me?
                 if(val[0] == -62 || val == " ") val = "";
 
-                if(val==" " || val == "") intVal = Grammar::$error;
+                if(val==" " || val == "") intVal = Grammar::$ERROR;
                 else intVal = stoi(val);
 
 

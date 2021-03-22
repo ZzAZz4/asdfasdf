@@ -44,8 +44,8 @@ namespace Grammar
         ZWAN,
         ZWEI,
         ZWOELF,
-        $end = ~((Type) 0) - 2,
-        $error,
+        $END,
+        $ERROR
     };
 
 
@@ -102,7 +102,7 @@ namespace Grammar
 
     constexpr static View strOf (Type token) noexcept
     {
-        if (token == $end)
+        if (token == $END)
             return "$"sv;
         return TOKEN_STR[token];
     }
@@ -146,7 +146,7 @@ namespace Lexer
 
     struct Item
     {
-        Token token;
+        Type token;
         View strVal;
         Value value;
     };
@@ -166,7 +166,7 @@ namespace Lexer
     {
         using namespace std;
 
-        if (s.empty()) return Item{ $end, strOf($end), 0 };
+        if (s.empty()) return Item{ $END, strOf($END), 0 };
 
         auto greater_than_s = [s = View(s)] (const auto& a) { return a > s; };
         auto gt_eq = greater_equal<>();
@@ -194,7 +194,7 @@ namespace Lexer
             auto item = Item{ token, strVal, valueOf(token) };
             return item;
         }
-        return Item{ $error, s.substr(0, 1) };
+        return Item{ $ERROR, s.substr(0, 1) };
     }
 
     static std::vector<Item> lex (View stream)
@@ -204,15 +204,15 @@ namespace Lexer
         while (true)
         {
             auto item = lexToken(stream.substr(position));
-            if (item.token == Grammar::$end)
+            if (item.token == Grammar::$END)
             {
                 lexemes.push_back(item);
                 return lexemes;
             }
-            if (item.token == Grammar::$error)
+            if (item.token == Grammar::$ERROR)
             {
                 position++;
-                if (lexemes.empty() || lexemes.back().token != Grammar::$error)
+                if (lexemes.empty() || lexemes.back().token != Grammar::$ERROR)
                 {
                     lexemes.push_back(item);
                 }

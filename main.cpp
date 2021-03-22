@@ -14,9 +14,10 @@ void addRule (Rules& rules, ID lhs, Rule rhs)
 
 int main ()
 {
-    SLRparser s;
-    auto l = Lexer::lex("dreissig");
-    s.parser(l);
+    SLRParser s;
+    auto l = Lexer::lex("fuenftausendzweihundertneinundfuenfdrei");
+    auto r = s.parse(l);
+    std::cout << std::boolalpha << r;
 
 //     this grammar is not faulty, so it passes. yay!
 //    std::string s = "zweihundertzweiundzwanzigtausendvierhundertsiebzehn";
