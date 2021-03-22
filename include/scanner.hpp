@@ -12,6 +12,8 @@ namespace Grammar
     using namespace std::string_view_literals;
 
     constexpr static unsigned NUM_TOKENS = 20;
+    constexpr static unsigned NUM_ALL_TOKENS = 21;
+
     enum Token : unsigned
     {
         ACHT = 1,
@@ -34,8 +36,32 @@ namespace Grammar
         ZWAN,
         ZWEI,
         ZWOELF,
+        $,
         ERR_BIT = (1u << 31u),
         NONE = 0u,
+    };
+
+    constexpr static unsigned NUM_NON_TERM = 19;
+    enum nonTerminal: unsigned{
+        sp = 1,
+        s, 
+        z1,
+        z2,
+        z3,
+        z4,
+        z5,
+        z6,
+        z7,
+        z8,
+        z9,
+        z10,
+        z11,
+        z12,
+        z13,
+        z14,
+        z613,
+        z1278911,
+        u,
     };
 
 
@@ -44,12 +70,23 @@ namespace Grammar
         10, 1000, 0, 4, 10, 10, 2, 2, 12
     };
 
+
+
     constexpr static std::array TOKEN_STR = {
         ""sv, "acht"sv, "drei"sv, "ein"sv, "elf"sv,
         "fuenf"sv, "hundert"sv, "neun"sv, "sech"sv,
         "sechs"sv, "sieb"sv, "sieben"sv, "ssig"sv,
         "tausend"sv, "und"sv, "vier"sv, "zehn"sv,
         "zig"sv, "zwan"sv, "zwei"sv, "zwoelf"sv,
+        "$"sv,
+    };
+
+    constexpr static std::array NON_TERM_STR = {
+        ""sv, "s'"sv, "s"sv,"z1"sv, "z2"sv, 
+        "z3"sv, "z4"sv, "z5"sv, "z6"sv, 
+        "z7"sv, "z8"sv,"z9"sv, "z10"sv, 
+        "z11"sv, "z12"sv, "z13"sv, "z14"sv, 
+        "z613"sv, "z1278911"sv, "u"sv,
     };
 
     constexpr static auto strOf (unsigned token) noexcept
@@ -60,6 +97,11 @@ namespace Grammar
     constexpr static auto valueOf (unsigned token) noexcept
     {
         return TOKEN_VAL[token];
+    }
+
+        constexpr static auto strOfTerm (unsigned nonTerm) noexcept
+    {
+        return NON_TERM_STR[nonTerm];
     }
 
 
