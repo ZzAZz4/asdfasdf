@@ -30,14 +30,17 @@ namespace jsonTable{
 }
 
 
+
 class slrTable{
     private:
 
-    using actionType = std::string_view;
-    using actionCont = std::vector<actionType>;
+    using grammarType = Grammar::Type ;
+
+    using actionType = unsigned;
+    using actionCont = std::vector<std::pair<string, string>>;
     
     using goToType = unsigned;
-    using goToCont = std::vector<unsigned>;
+    using goToCont = std::vector<goToType>;
     
     
     
@@ -45,55 +48,63 @@ class slrTable{
 
     std::vector<actionCont> action;
     std::vector<goToCont> goTo;
-    std::vector<std::pair<string, std::vector<string>>>rules;
-    
+    std::vector<std::pair<grammarType, std::vector<grammarType>>>rules;
+
 
 
     public:
     
     // action(numTokens + $)
-    slrTable():j(jsonTable::getJson()), action(j.size(), actionCont(Grammar::NUM_ALL_TOKENS + 1)),
-    goTo(j.size(), goToCont(Grammar::NUM_NON_TERM + 1)){
+    slrTable():j(jsonTable::getJson()), action(j.size(), actionCont(Grammar::NUM_ALL_TOKENS)),
+    goTo(j.size(), goToCont(Grammar::NUM_NON_TERM)){
 
 
-//
-//        for (json::iterator it = j.begin(); it != j.end(); ++it) {
-//            auto row = *it;
-//
-//            unsigned state = stoi(row.at("state").get<string>());
-//
-//            for(int i = 1; i <= Grammar::NUM_ALL_TOKENS; i++){
-//
-//                string val = row.at(string(Grammar::TOKEN_STR[i])).get<string>();
-//                // why the fuck does -62 char mean
-//                // also checking it because fuck me
-//                if(val[0] == -62 || val == " ") val = "";
-//
-//
-//                action[state][i] = val;
-//
-//            }
-//
-//
-//            for(int i = 1; i <= Grammar::NUM_NON_TERM; i++){
-//                string val = row.at(string(Grammar::NON_TERM_STR[i])).get<string>();
-//                unsigned intVal;
-//
-//                // seriusly why the fuck does -62 is there
-//                // does it even exist
-//                // or is god fucking with me?
-//                if(val[0] == -62 || val == " ") val = "";
-//
-//                if(val==" " || val == "") intVal = Grammar::NONE;
-//                else intVal = stoi(val);
-//
-//
-//                goTo[state][i] = intVal;
-//            }
-//
-//
-//
-//        }
+
+            for (json::iterator it = j.begin(); it != j.end(); ++it) {
+            auto row = *it;
+
+            row.at("state").get<string>();
+            unsigned state = stoi(row.at("state").get<string>());
+
+            for(int i = 0; i < Grammar::NUM_ALL_TOKENS; i++){
+
+                string val = row.at(string(Grammar::TOKEN_STR[i])).get<string>();
+                // why the fuck does -62 char mean
+                // also checking it because fuck me
+                if(val[0] == -62 || val == " ") val = "";
+
+                if(val[0] == 's') {
+                    action[state][i].first = "s";
+                    val = val.substr(1);
+                }
+                else if(val[0] == 'r') {
+                    action[state][i].first = "r";
+                    val = val.substr(1);
+                }
+
+                action[state][i].second = val;
+            }
+
+
+
+            for(int i = 0; i < Grammar::NUM_NON_TERM; i++){
+                string val = row.at(string(Grammar::NON_TERM_STR(i))).get<string>();
+                unsigned intVal;
+
+                // seriusly why the fuck does -62 is there
+                // does it even exist
+                // or is god fucking with me?
+                if(val[0] == -62 || val == " ") val = "";
+
+                if(val==" " || val == "") intVal = Grammar::$error;
+                else intVal = stoi(val);
+
+
+                goTo[state][i] = intVal;
+            }
+
+
+        }
 
         std::ifstream i(jsonTable::ruleFile);
         std::string word;
@@ -107,25 +118,16 @@ class slrTable{
             if (!(iss >> lhs >> arrow)) { break; } // error
 
             string str;
-            rules.push_back({lhs,{}});
+            rules.push_back({Grammar::toEnum(lhs),{}});
 
             while (iss>> str){
-                rules[rules.size() - 1].second.push_back(str);
+                rules[rules.size() - 1].second.push_back(Grammar::toEnum(str));
             }
-            
+
         }
         i.close();
 
-
-//        for(int i = 0; i < rules.size();i++){
-//            cout<<rules[i].first<<" -> ";
-//            for(auto it: rules[i].second){
-//                cout<<it<<" ";
-//            }
-//            cout<<'\n';
-//        }
-
-        
+        j.clear();
 
     }
 

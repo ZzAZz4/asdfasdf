@@ -233,44 +233,31 @@ void print(const SetMap& m){
     }
 }
 
+#include "../json/json.h"
 
 class SLRparser{
 private:
 
-    std::stack<ID> stack;
-    SetMap first;
-    SetMap follow;
-    IDSet nonTerms;
 
+
+    using state = unsigned;
+    using token = int;
+
+    stack<pair<token, state>> sintaxStack;
+    queue<token> inputQueue;
+    slrTable table;
+
+    using input = std::vector<token>;
 
 public:
 
-    explicit SLRparser (const Rules& rules, ID start){
-        // cretate first and follow
-        for (auto[lhs, _] : rules)
-            nonTerms.emplace(lhs);
+    explicit SLRparser (): table(){
 
-        first = makeFirst(rules, nonTerms);
-        follow = makeFollow(rules, start, first, nonTerms);
-        print(first);
-        std::cout<<'\n';
-        print(follow);
-
-
-            std::cout<<start<<'\n';
-
-        // create dfa
-        parserDfa dfa (rules,start,nonTerms);
-        dfa.printDfa();
-        dfa.printTransitions();
-
-
-        // create the table
     }
 
-    bool parse (std::vector<ID> s){
-        return false;
-    }
+
+
+
 
 };
 
