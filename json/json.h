@@ -37,7 +37,7 @@ class slrTable{
     using grammarType = Grammar::Type ;
 
     using actionType = unsigned;
-    using actionCont = std::vector<std::pair<string, string>>;
+    using actionCont = std::vector<std::pair<string, grammarType>>;
     
     using goToType = unsigned;
     using goToCont = std::vector<goToType>;
@@ -76,14 +76,25 @@ class slrTable{
                 if(val[0] == 's') {
                     action[state][i].first = "s";
                     val = val.substr(1);
+                    action[state][i].second = stoi(val);
                 }
                 else if(val[0] == 'r') {
                     action[state][i].first = "r";
                     val = val.substr(1);
+                    action[state][i].second = stoi(val);
+
+                }
+                else if(val == "$"){
+                    cout<<state;
+                    action[state][i].first = "$";
+                    action[state][i].second = Grammar::$end;
                 }
 
-                action[state][i].second = val;
+                if(i == 1) cout<<Grammar::TOKEN_STR[i]<<"|"<<val<<'\n';
+
             }
+
+
 
 
 
@@ -115,7 +126,7 @@ class slrTable{
         while (std::getline(i, line)){
             std::istringstream iss(line);
             string lhs, arrow;
-            if (!(iss >> lhs >> arrow)) { break; } // error
+            if (!(iss >> lhs >> arrow)) { cout<<"error";break; } // error
 
             string str;
             rules.push_back({Grammar::toEnum(lhs),{}});
@@ -128,6 +139,9 @@ class slrTable{
         i.close();
 
         j.clear();
+
+
+
 
     }
 

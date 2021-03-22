@@ -14,7 +14,9 @@ void addRule (Rules& rules, ID lhs, Rule rhs)
 
 int main ()
 {
-    slrTable s;
+    SLRparser s;
+    auto l = Lexer::lex("dreissig");
+    s.parser(l);
 
 //     this grammar is not faulty, so it passes. yay!
 //    std::string s = "zweihundertzweiundzwanzigtausendvierhundertsiebzehn";

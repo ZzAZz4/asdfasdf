@@ -44,8 +44,8 @@ namespace Grammar
         ZWAN,
         ZWEI,
         ZWOELF,
-        $end = ~((Type) 0) - 1,
-        $error
+        $end = ~((Type) 0) - 2,
+        $error,
     };
 
 

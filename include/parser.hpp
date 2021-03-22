@@ -234,6 +234,7 @@ void print(const SetMap& m){
 }
 
 #include "../json/json.h"
+#include "../include/scanner.hpp"
 
 class SLRparser{
 private:
@@ -251,8 +252,13 @@ private:
 
 public:
 
-    explicit SLRparser (): table(){
+    SLRparser (): table(){
 
+    }
+
+    bool parser(vector<Lexer::Item> &input){
+
+        return false;
     }
 
 

@@ -1,14 +1,14 @@
-S' -> S
-S -> z1
-S -> z2
-S -> z7
-S -> z8
-S -> z9
-S -> z10
-S -> z11
-S -> z12
-S -> z13
-S -> z14
+s' -> s
+s -> z1
+s -> z2
+s -> z7
+s -> z8
+s -> z9
+s -> z10
+s -> z11
+s -> z12
+s -> z13
+s -> z14
 z2 -> z3 zehn
 z7 -> z4 zig
 z7 -> drei ssig
