@@ -3,7 +3,7 @@
 
 #include "../include/common.hpp"
 #include "../include/scanner.hpp"
-#include <nlohmann/json.hpp>
+#include "json.hpp"
 #include <fstream>
 #include <sstream>
 
@@ -14,8 +14,9 @@ using json = nlohmann::json;
 
 namespace jsonTable{
 
-    const string  file = "/home/ubuntu/Desktop/2020-0/compPy/json/table.json";
-    const string ruleFile = "/home/ubuntu/Desktop/2020-0/compPy/json/rules.txt";
+    // insert yout full path
+    const string  file = "C:/Users/Jean Paul/CLionProjects/compPy/json/table.json";
+    const string ruleFile = "C:/Users/Jean Paul/CLionProjects/compPy/json/rules.txt";
 
     json getJson(){
         json j;
@@ -55,43 +56,44 @@ class slrTable{
     goTo(j.size(), goToCont(Grammar::NUM_NON_TERM + 1)){
 
 
-        for (json::iterator it = j.begin(); it != j.end(); ++it) {
-            auto row = *it;
-
-            unsigned state = stoi(row.at("state").get<string>());
-                
-            for(int i = 1; i <= Grammar::NUM_ALL_TOKENS; i++){
-
-                string val = row.at(string(Grammar::TOKEN_STR[i])).get<string>();
-                // why the fuck does -62 char mean
-                // also checking it because fuck me
-                if(val[0] == -62 || val == " ") val = "";
-                
-
-                action[state][i] = val;
-                
-            }
-
-
-            for(int i = 1; i <= Grammar::NUM_NON_TERM; i++){
-                string val = row.at(string(Grammar::NON_TERM_STR[i])).get<string>();
-                unsigned intVal;
-                
-                // seriusly why the fuck does -62 is there
-                // does it even exist
-                // or is god fucking with me?
-                if(val[0] == -62 || val == " ") val = ""; 
-                
-                if(val==" " || val == "") intVal = Grammar::NONE;
-                else intVal = stoi(val);
-
-                
-                goTo[state][i] = intVal;    
-            }
-
-             
-
-        }
+//
+//        for (json::iterator it = j.begin(); it != j.end(); ++it) {
+//            auto row = *it;
+//
+//            unsigned state = stoi(row.at("state").get<string>());
+//
+//            for(int i = 1; i <= Grammar::NUM_ALL_TOKENS; i++){
+//
+//                string val = row.at(string(Grammar::TOKEN_STR[i])).get<string>();
+//                // why the fuck does -62 char mean
+//                // also checking it because fuck me
+//                if(val[0] == -62 || val == " ") val = "";
+//
+//
+//                action[state][i] = val;
+//
+//            }
+//
+//
+//            for(int i = 1; i <= Grammar::NUM_NON_TERM; i++){
+//                string val = row.at(string(Grammar::NON_TERM_STR[i])).get<string>();
+//                unsigned intVal;
+//
+//                // seriusly why the fuck does -62 is there
+//                // does it even exist
+//                // or is god fucking with me?
+//                if(val[0] == -62 || val == " ") val = "";
+//
+//                if(val==" " || val == "") intVal = Grammar::NONE;
+//                else intVal = stoi(val);
+//
+//
+//                goTo[state][i] = intVal;
+//            }
+//
+//
+//
+//        }
 
         std::ifstream i(jsonTable::ruleFile);
         std::string word;
@@ -112,16 +114,17 @@ class slrTable{
             }
             
         }
+        i.close();
 
-        /*
-        for(int i = 0; i < rules.size();i++){
-            cout<<rules[i].first<<" -> ";
-            for(auto it: rules[i].second){
-                cout<<it<<" ";
-            }
-            cout<<'\n';
-        }
-        */
+
+//        for(int i = 0; i < rules.size();i++){
+//            cout<<rules[i].first<<" -> ";
+//            for(auto it: rules[i].second){
+//                cout<<it<<" ";
+//            }
+//            cout<<'\n';
+//        }
+
         
 
     }

@@ -2,6 +2,7 @@
 #include <bitset>
 #include "include/scanner.hpp"
 #include "include/parser.hpp"
+#include "json/json.h"
 
 
 void addRule (Rules& rules, ID lhs, Rule rhs)
@@ -13,30 +14,7 @@ void addRule (Rules& rules, ID lhs, Rule rhs)
 
 int main ()
 {
-    Rules rules;
-
-    ID start = "E'";
-
-    addRule(rules, {"E'"} , {"E"});
-
-    addRule(rules, {"E"} , {"E", "+", "T"});
-
-    addRule(rules, {"E"} , {"T"});
-
-    addRule(rules, {"T"} , {"T", "*", "F"});
-
-    addRule(rules, {"T"} , {"F"});
-
-    addRule(rules, {"F"} , {"(", "E", ")"});
-
-    addRule(rules, {"F"} , {"id"});
-
-
-
-
-
-    SLRparser p(rules,start);
-
+    slrTable s;
 
 //     this grammar is not faulty, so it passes. yay!
 //    std::string s = "zweihundertzweiundzwanzigtausendvierhundertsiebzehn";
@@ -59,5 +37,5 @@ int main ()
 //    for (auto lexeme : lexemes)
 //        std::cout << (int) lexeme.token << ' ' << lexeme.str << ' ' << lexeme.value << '\n';
 
-
+    return 0;
 }
