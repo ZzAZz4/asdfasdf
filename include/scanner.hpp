@@ -45,9 +45,8 @@ namespace Grammar
         $error
     };
 
-
     constexpr static unsigned NUM_NON_TERM = 19;
-    constexpr static Type PROD_MASK = 1 << (sizeof(Type) - 1);
+    constexpr static Type PROD_MASK = 1 << (8 * sizeof(Type) - 1);
 
     enum Production : Type
     {
@@ -87,6 +86,13 @@ namespace Grammar
         "zig"sv, "zwan"sv, "zwei"sv, "zwoelf"sv,
     };
 
+    constexpr static std::array PRODUCTION_STR = {
+        "s'"sv, "s"sv, "z1"sv, "z2"sv,
+        "z3"sv, "z4"sv, "z5"sv, "z6"sv,
+        "z7"sv, "z8"sv, "z9"sv, "z10"sv,
+        "z11"sv, "z12"sv, "z13"sv, "z14"sv,
+        "z613"sv, "z1278911"sv, "u"sv,
+    };
 
     constexpr static View strOf (Type token) noexcept
     {
@@ -102,15 +108,20 @@ namespace Grammar
 
     constexpr static Production indexOfProduction (unsigned index)
     {
-        return (Production)(index | PROD_MASK);
+        return (Production) (index | PROD_MASK);
+    }
+
+    static Type toEnum (View str)
+    {
+        auto tIt = find(TOKEN_STR.begin(), TOKEN_STR.end(), str);
+        if (tIt != TOKEN_STR.end())
+            return distance(TOKEN_STR.begin(), tIt);
+
+        auto pIt = find(PRODUCTION_STR.begin(), PRODUCTION_STR.end(), str);
+        return PROD_MASK | distance(PRODUCTION_STR.begin(), pIt);
     }
 
 }
-
-constexpr auto beginsWith (Grammar::View s, Grammar::View e)
-{
-    return s.substr(0, e.size()) == e;
-};
 
 namespace Lexer
 {
@@ -124,7 +135,6 @@ namespace Lexer
         Value value;
     };
 
-
     constexpr static auto matcher (View s)
     {
         return [s = View(s)] (View a, View b)
@@ -135,7 +145,7 @@ namespace Lexer
         };
     }
 
-    constexpr static auto lexToken (View s)
+    static auto lexToken (View s)
     {
         if (s.empty()) return Item{ $end, strOf($end), 0 };
 
@@ -148,7 +158,6 @@ namespace Lexer
 
         auto rev = lower_bound(rtBegin, rtEnd, s, gt_eq);
         auto matchFst = decltype(TOKEN_STR)::const_iterator((rev + 1).base());
-
         auto matchLst = find_if(matchFst, tEnd, greater_than_s);
 
         if (rev == rtEnd || (*rev)[0] != s[0])
@@ -168,7 +177,7 @@ namespace Lexer
         return Item{ $error, s.substr(0, 1) };
     }
 
-    static std::vector<Item> lex (View stream)
+    static auto lex (View stream)
     {
         std::vector<Item> lexemes;
         unsigned position = 0;
