@@ -15,8 +15,8 @@ using json = nlohmann::json;
 namespace jsonTable{
 
     // insert yout full path
-    const string  file = "C:/Users/esteb/Desktop/asdfasdf/json/table.json";
-    const string ruleFile = "C:/Users/esteb/Desktop/asdfasdf/json/rules.txt";
+    const string  file = "C:/Users/Jean Paul/CLionProjects/compPy/json/table.json";
+    const string ruleFile = "C:/Users/Jean Paul/CLionProjects/compPy/json/rules.txt";
 
     json getJson(){
         json j;

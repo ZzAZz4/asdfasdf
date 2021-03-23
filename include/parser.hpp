@@ -254,6 +254,8 @@ public:
         {
             bool isState;
             Grammar::Type stored;
+            Grammar::View strVal = "";
+            int val = 0;
         };
 
         stack<Entry> symbolStack;
@@ -269,25 +271,58 @@ public:
                 Grammar::Type token = input.at(index).token;
                 auto action = table.action[state][token];
                 if (action.first.empty()) return false;
-                if (action.first == "acc") return true;
+                else if (action.first == "acc") return true;
                 if (action.first == "s")
                 {
-                    index++;
-                    symbolStack.push(Entry{ false, token });
+                    symbolStack.push(Entry{ false, token,input.at(index).strVal, input.at(index).value });
                     symbolStack.push(Entry{ true, action.second });
+                    index++;
                 }
                 else if (action.first == "r")
                 {
                     auto[repl, rhs] = table.rules[action.second];
+                    string strTemp = {};
+                    int valTemp = {};
+                    bool firstRead = true;
+
+                    using namespace Grammar;
+                    vector<Grammar::Type> multipication{Z7, Z9,Z10,Z13};
                     while (!rhs.empty())
                     {
+                        // pooping the state entry
                         symbolStack.pop();
+                        // checking the token entry
                         if (symbolStack.top().stored != rhs.back())
                             return false;
+
+                        //checking for
+                        auto item= symbolStack.top();
+                        bool f = (find(multipication.begin(),multipication.end(),repl) == multipication.end());
+
+                        if(firstRead || (f)){
+                            valTemp += item.val;
+                            if(!firstRead)std::cout<<"+";
+                            firstRead = false;
+
+                        }
+                        else{
+                            valTemp *= item.val;
+                            cout<<"*";
+                        }
+
+
+                        cout<<item.val;
+                        if(isProduction(item.stored))
+                            cout<<"["<< Grammar::PRODUCTION_STR[item.stored - START]<<"]" ;
+
+                        else cout<<"["<<Grammar::TOKEN_STR[item.stored]<<"]" ;
+
+
                         symbolStack.pop();
                         rhs.pop_back();
                     }
-                    symbolStack.push(Entry{ false, repl });
+                    std::cout<<"=" <<valTemp<<"["<<Grammar::PRODUCTION_STR[repl - START] <<"]"<<'\n';
+                    symbolStack.push(Entry{ false, repl,Grammar::PRODUCTION_STR[repl - START],valTemp });
                 }
                 else throw action.first.c_str();
             }

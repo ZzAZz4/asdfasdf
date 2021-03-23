@@ -15,7 +15,7 @@ void addRule (Rules& rules, ID lhs, Rule rhs)
 int main ()
 {
     SLRParser s;
-    auto l = Lexer::lex("fuenftausendzweihundertneinundfuenfdrei");
+    auto l = Lexer::lex("zwanzig");
     auto r = s.parse(l);
     std::cout << std::boolalpha << r;
 

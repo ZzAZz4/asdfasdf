@@ -48,6 +48,13 @@ namespace Grammar
         $ERROR
     };
 
+    constexpr static std::array TOKEN_VAL = {
+            8, 3, 1, 11, 5, 100, 9,
+            6, 6, 7, 7,
+            10, 1000, 0, 4,
+            10, 10, 2, 2, 12
+    };
+
 
     constexpr static unsigned NUM_NON_TERM = 19;
     constexpr static Type PROD_MASK = 1 << (8 * sizeof(Type) - 1);
@@ -75,10 +82,7 @@ namespace Grammar
         U,
     };
 
-    constexpr static std::array TOKEN_VAL = {
-            8, 3, 1, 11, 5, 100, 9, 6, 6, 7, 7,
-            10, 1000, 0, 4, 10, 10, 2, 2, 12
-    };
+
 
     using Value = decltype(TOKEN_VAL)::value_type;
 
@@ -130,6 +134,11 @@ namespace Grammar
 
         auto pIt = find(PRODUCTION_STR.begin(), PRODUCTION_STR.end(), str);
         return PROD_MASK | distance(PRODUCTION_STR.begin(), pIt);
+    }
+
+    constexpr static bool isProduction (Type a)
+    {
+        return a & PROD_MASK;
     }
 
 }
