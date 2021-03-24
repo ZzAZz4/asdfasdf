@@ -45,7 +45,6 @@
 //
 //};
 
-
 // type and key
 //class parserDfa{
 //
@@ -230,7 +229,143 @@
 #include "../json/json.h"
 #include <iostream>
 #include <tuple>
+#include <climits>
 
+int levDistance(std::string source, std::string target)
+{
+
+    // Step 1
+
+    const int n = source.length();
+    const int m = target.length();
+    if (n == 0)
+    {
+        return m;
+    }
+    if (m == 0)
+    {
+        return n;
+    }
+
+    // Good form to declare a TYPEDEF
+
+    typedef std::vector<std::vector<int>> Tmatrix;
+
+    Tmatrix matrix(n + 1);
+
+    // Size the vectors in the 2.nd dimension. Unfortunately C++ doesn't
+    // allow for allocation on declaration of 2.nd dimension of vec of vec
+
+    for (int i = 0; i <= n; i++)
+    {
+        matrix[i].resize(m + 1);
+    }
+
+    // Step 2
+
+    for (int i = 0; i <= n; i++)
+    {
+        matrix[i][0] = i;
+    }
+
+    for (int j = 0; j <= m; j++)
+    {
+        matrix[0][j] = j;
+    }
+
+    // Step 3
+
+    for (int i = 1; i <= n; i++)
+    {
+
+        const char s_i = source[i - 1];
+
+        // Step 4
+
+        for (int j = 1; j <= m; j++)
+        {
+
+            const char t_j = target[j - 1];
+
+            // Step 5
+
+            int cost;
+            if (s_i == t_j)
+            {
+                cost = 0;
+            }
+            else
+            {
+                cost = 1;
+            }
+
+            // Step 6
+
+            const int above = matrix[i - 1][j];
+            const int left = matrix[i][j - 1];
+            const int diag = matrix[i - 1][j - 1];
+            int cell = std::min(above + 1, std::min(left + 1, diag + cost));
+
+            // Step 6A: Cover transposition, in addition to deletion,
+            // insertion and substitution. This step is taken from:
+            // Berghel, Hal ; Roach, David : "An Extension of Ukkonen's
+            // Enhanced Dynamic Programming ASM Algorithm"
+            // (http://www.acm.org/~hlb/publications/asm/asm.html)
+
+            if (i > 2 && j > 2)
+            {
+                int trans = matrix[i - 2][j - 2] + 1;
+                if (source[i - 2] != t_j)
+                    trans++;
+                if (s_i != target[j - 2])
+                    trans++;
+                if (cell > trans)
+                    cell = trans;
+            }
+
+            matrix[i][j] = cell;
+        }
+    }
+
+    // Step 7
+
+    return matrix[n][m];
+}
+
+string test(std::string str)
+{
+    int tempRes = 0;
+    int temp = INT_MAX;
+    for (int i = 0; i < Grammar::NUM_TOKENS; i++)
+    {
+        auto res = levDistance(str, static_cast<const string>(Grammar::TOKEN_STR[i]));
+        if (temp > res)
+        {
+            temp = res;
+            tempRes = i;
+        }
+    }
+
+    return string(Grammar::TOKEN_STR[tempRes]);
+}
+
+bool readLexicErrors(const std::vector<Lexer::Item> &v)
+{
+    bool ret = false;
+    int pos = 0;
+    for (const auto &it : v)
+    {
+        pos += it.strVal.size();
+        if (it.token == Grammar::$ERROR)
+        {
+            ret = true;
+            cerr << "Lexical error: at position: " << pos << '\n';
+            cerr << "\t" << it.strVal << '\n';
+            cerr << "Did you meant to say:" << test(string(it.strVal)) << '\n';
+        }
+    }
+    return ret;
+}
 
 struct SLRParser
 {
@@ -242,15 +377,13 @@ private:
     using input = std::vector<token>;
 
 public:
-
     std::vector<Grammar::Type> errors;
 
-
-    SLRParser () : table()
+    SLRParser() : table()
     {
     }
 
-    auto parse (const vector<Lexer::Item>& input)
+    auto parse(const vector<Lexer::Item> &input)
     {
         using Entry = struct
         {
@@ -260,72 +393,84 @@ public:
             int val = 0;
         };
 
+        auto lexicErrors = readLexicErrors(input);
+        if (lexicErrors)
+            return false;
+
         stack<Entry> symbolStack;
-        symbolStack.emplace(Entry{ true, 0 });
+        symbolStack.emplace(Entry{true, 0});
         int index = 0;
 
         while (index < input.size())
         {
             if (symbolStack.top()
-                           .isState) // read token from input and do an action
+                    .isState) // read token from input and do an action
             {
                 auto state = symbolStack.top().stored;
                 std::pair<string, Grammar::Type> action;
                 Grammar::Type token = input.at(index).token;
 
-
                 action = table.action[state][token];
 
-                if (action.first.empty()){
+                if (action.first.empty())
+                {
                     errors.push_back(index);
 
-                    std::vector<unsigned > temp = table.goTo[state];
+                    std::vector<unsigned> temp = table.goTo[state];
 
                     int i = 0;
                     Grammar::Type tempState = Grammar::$ERROR;
 
-                    for(; i < temp.size(); i++){
-                        if(temp[i] != Grammar::$ERROR){
+                    for (; i < temp.size(); i++)
+                    {
+                        if (temp[i] != Grammar::$ERROR)
+                        {
                             auto expectedState = table.action[temp[i]][token];
-                            if(!expectedState.first.empty()){
-                                if(tempState != Grammar::$ERROR){
-                                    if(expectedState.first != "r"){
+                            if (!expectedState.first.empty())
+                            {
+                                if (tempState != Grammar::$ERROR)
+                                {
+                                    if (expectedState.first != "r")
+                                    {
                                         tempState = i;
                                         break;
                                     }
                                 }
-                                else tempState = i;
+                                else
+                                    tempState = i;
                             }
                         }
                     }
 
-
-                    if(tempState != Grammar::$ERROR){
-                        symbolStack.push(Entry{ false,Grammar::indexOfProduction(tempState),Grammar::PRODUCTION_STR[tempState], 0});
-                        symbolStack.push(Entry{ true, temp[tempState] });
+                    if (tempState != Grammar::$ERROR)
+                    {
+                        symbolStack.push(Entry{false, Grammar::indexOfProduction(tempState), Grammar::PRODUCTION_STR[tempState], 0});
+                        symbolStack.push(Entry{true, temp[tempState]});
                         continue;
                     }
-                    else{
+                    else
+                    {
                         index++;
                         continue;
                     }
                 }
-                else if (action.first == "acc") return true && (errors.empty());
+                else if (action.first == "acc")
+                    return true && (errors.empty());
                 if (action.first == "s")
                 {
-                    symbolStack.push(Entry{ false, token,input.at(index).strVal, input.at(index).value });
-                    symbolStack.push(Entry{ true, action.second });
+                    symbolStack.push(Entry{false, token, input.at(index).strVal, input.at(index).value});
+                    symbolStack.push(Entry{true, action.second});
                     index++;
                 }
                 else if (action.first == "r")
                 {
-                    auto[repl, rhs] = table.rules[action.second];
+                    auto [repl, rhs] = table.rules[action.second];
                     string strTemp = {};
                     int valTemp = {};
                     bool firstRead = true;
 
                     using namespace Grammar;
-                    vector<Grammar::Type> multipication{Z7, Z9,Z10,Z13};
+                    vector<Grammar::Type> multipication{Z7, Z9, Z10, Z13};
                     while (!rhs.empty())
                     {
                         // pooping the state entry
@@ -335,35 +480,37 @@ public:
                             return false;
 
                         //checking for
-                        auto item= symbolStack.top();
-                        bool f = (find(multipication.begin(),multipication.end(),repl) == multipication.end());
+                        auto item = symbolStack.top();
+                        bool f = (find(multipication.begin(), multipication.end(), repl) == multipication.end());
 
-                        if(firstRead || (f)){
+                        if (firstRead || (f))
+                        {
                             valTemp += item.val;
-                            if(!firstRead)std::cout<<"+";
+                            if (!firstRead)
+                                std::cout << "+";
                             firstRead = false;
-
                         }
-                        else{
+                        else
+                        {
                             valTemp *= item.val;
-                            cout<<"*";
+                            cout << "*";
                         }
 
+                        cout << item.val;
+                        if (isProduction(item.stored))
+                            cout << "[" << Grammar::PRODUCTION_STR[item.stored - START] << "]";
 
-                        cout<<item.val;
-                        if(isProduction(item.stored))
-                            cout<<"["<< Grammar::PRODUCTION_STR[item.stored - START]<<"]" ;
-
-                        else cout<<"["<<Grammar::TOKEN_STR[item.stored]<<"]" ;
-
+                        else
+                            cout << "[" << Grammar::TOKEN_STR[item.stored] << "]";
 
                         symbolStack.pop();
                         rhs.pop_back();
                     }
-                    std::cout<<"=" <<valTemp<<"["<<Grammar::PRODUCTION_STR[repl - START] <<"]"<<'\n';
-                    symbolStack.push(Entry{ false, repl,Grammar::PRODUCTION_STR[repl - START],valTemp });
+                    std::cout << "=" << valTemp << "[" << Grammar::PRODUCTION_STR[repl - START] << "]" << '\n';
+                    symbolStack.push(Entry{false, repl, Grammar::PRODUCTION_STR[repl - START], valTemp});
                 }
-                else throw("a");
+                else
+                    throw("a");
             }
             else // goto
             {
@@ -371,16 +518,11 @@ public:
                 symbolStack.pop();
                 auto state = symbolStack.top().stored;
                 symbolStack.push(rule);
-                symbolStack.push(Entry{ true, table.goTo[state][rule.stored] });
+                symbolStack.push(Entry{true, table.goTo[state][rule.stored]});
             }
         }
         return false;
     }
-
 };
-
-
-
-
 
 #endif //ASDFASDF_PARSER_HPP
