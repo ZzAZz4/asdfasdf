@@ -239,10 +239,12 @@ private:
     using token = int;
 
     slrTable table;
-
     using input = std::vector<token>;
 
 public:
+
+    std::vector<Grammar::Type> errors;
+
 
     SLRParser () : table()
     {
@@ -268,10 +270,47 @@ public:
                            .isState) // read token from input and do an action
             {
                 auto state = symbolStack.top().stored;
+                std::pair<string, Grammar::Type> action;
                 Grammar::Type token = input.at(index).token;
-                auto action = table.action[state][token];
-                if (action.first.empty()) return false;
-                else if (action.first == "acc") return true;
+
+
+                action = table.action[state][token];
+
+                if (action.first.empty()){
+                    errors.push_back(index);
+
+                    std::vector<unsigned > temp = table.goTo[state];
+
+                    int i = 0;
+                    Grammar::Type tempState = Grammar::$ERROR;
+
+                    for(; i < temp.size(); i++){
+                        if(temp[i] != Grammar::$ERROR){
+                            auto expectedState = table.action[temp[i]][token];
+                            if(!expectedState.first.empty()){
+                                if(tempState != Grammar::$ERROR){
+                                    if(expectedState.first != "r"){
+                                        tempState = i;
+                                        break;
+                                    }
+                                }
+                                else tempState = i;
+                            }
+                        }
+                    }
+
+
+                    if(tempState != Grammar::$ERROR){
+                        symbolStack.push(Entry{ false,Grammar::indexOfProduction(tempState),Grammar::PRODUCTION_STR[tempState], 0});
+                        symbolStack.push(Entry{ true, temp[tempState] });
+                        continue;
+                    }
+                    else{
+                        index++;
+                        continue;
+                    }
+                }
+                else if (action.first == "acc") return true && (errors.empty());
                 if (action.first == "s")
                 {
                     symbolStack.push(Entry{ false, token,input.at(index).strVal, input.at(index).value });
@@ -324,7 +363,7 @@ public:
                     std::cout<<"=" <<valTemp<<"["<<Grammar::PRODUCTION_STR[repl - START] <<"]"<<'\n';
                     symbolStack.push(Entry{ false, repl,Grammar::PRODUCTION_STR[repl - START],valTemp });
                 }
-                else throw action.first.c_str();
+                else throw("a");
             }
             else // goto
             {
@@ -339,6 +378,9 @@ public:
     }
 
 };
+
+
+
 
 
 #endif //ASDFASDF_PARSER_HPP
