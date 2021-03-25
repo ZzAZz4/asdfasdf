@@ -470,10 +470,10 @@ public:
                     bool firstRead = true;
 
                     using namespace Grammar;
-                    vector<Grammar::Type> multipication{Z7, Z9, Z10, Z13};
+                    vector<Type> multiplication{Z7, Z9, Z10, Z13};
                     while (!rhs.empty())
                     {
-                        // pooping the state entry
+                        // popping the state entry
                         symbolStack.pop();
                         // checking the token entry
                         if (symbolStack.top().stored != rhs.back())
@@ -481,7 +481,7 @@ public:
 
                         //checking for
                         auto item = symbolStack.top();
-                        bool f = (find(multipication.begin(), multipication.end(), repl) == multipication.end());
+                        bool f = (find(multiplication.begin(), multiplication.end(), repl) == multiplication.end());
 
                         if (firstRead || (f))
                         {
