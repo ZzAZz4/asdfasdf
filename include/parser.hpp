@@ -455,7 +455,7 @@ public:
                     }
                 }
                 else if (action.first == "acc")
-                    return true && (errors.empty());
+                    return errors.empty();
                 if (action.first == "s")
                 {
                     symbolStack.push(Entry{false, token, input.at(index).strVal, input.at(index).value});
@@ -509,8 +509,7 @@ public:
                     std::cout << "=" << valTemp << "[" << Grammar::PRODUCTION_STR[repl - START] << "]" << '\n';
                     symbolStack.push(Entry{false, repl, Grammar::PRODUCTION_STR[repl - START], valTemp});
                 }
-                else
-                    throw("a");
+                else return false;
             }
             else // goto
             {
