@@ -1,11 +1,11 @@
-main = test.cpp
-cppFiles = src/common.cpp src/fisrtSet.cpp src/followSet.cpp
+main = main.cpp
+cppFiles = src/common.cpp src/parser.cpp src/scanner.cpp
 
 all: compile execute
 
 
 compile:
-	g++ -std=c++17 $(main) 
+    g++ -std=c++17 $(main) 
 
 execute:
-	./a.out
+    ./a.out
